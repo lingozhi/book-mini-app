@@ -1,0 +1,39 @@
+<view class="video-player" bindtap="showControlsUI">
+  <video 
+    id="reader-video"
+    src="{{videoUrl}}"
+    bindready="onVideoReady"
+    bindloadedmetadata="onVideoLoad"
+    binderror="onVideoError"
+    show-center-play-btn="{{false}}"
+    controls="{{true}}"
+    autoplay="{{true}}"
+    object-fit="contain"
+    bindfullscreenchange="onFullScreenChange"
+    bindplay="onVideoPlay"
+    bindpause="onVideoPause"
+    bindended="onVideoEnd"
+    class="video {{isRotated ? 'video-rotated' : ''}}">
+  </video>
+  
+  <!-- 自定义控制按钮 -->
+  <view class="custom-controls {{showControls ? 'show' : 'hide'}}">
+    <view class="control-btn rotate-btn" catchtap="toggleRotate">
+      <view class="rotate-icon {{isRotated ? 'rotated' : ''}}">⟲</view>
+    </view>
+  </view>
+  
+  <!-- 视频播放控制 -->
+  <view class="video-controls-overlay" catchtap="togglePlay" wx:if="{{!isPlaying && showControls}}">
+    <view class="center-play-btn">
+      <view class="play-icon">▶</view>
+    </view>
+  </view>
+  
+  <!-- 错误状态 - 仅保留错误指示器，移除加载指示器 -->
+  <view class="video-error" wx:if="{{hasError}}">
+    <view class="error-icon">!</view>
+    <view class="error-text">{{errorMsg || '视频加载失败'}}</view>
+    <view class="retry-btn" bindtap="retryVideo">重试</view>
+  </view>
+</view> 

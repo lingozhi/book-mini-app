@@ -1,0 +1,231 @@
+.audio-player {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 0 32rpx;
+  background: linear-gradient(to bottom, #f5a8a8, #e9dbd8);
+  overflow-y: auto;
+}
+
+.chapter-title {
+  font-size: 42rpx;
+  font-weight: bold;
+  margin: 60rpx 0 30rpx 0;
+  text-align: center;
+  color: #333;
+  width: 100%;
+}
+
+.vinyl-container {
+  margin-top: 80rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  position: relative;
+  height: 400rpx;
+  pointer-events: none;
+}
+
+.vinyl-record {
+  position: relative;
+  width: 420rpx;
+  height: 420rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.record-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.record-center {
+  position: absolute;
+  width: 100rpx;
+  height: 100rpx;
+  z-index: 2;
+}
+
+.record-arm {
+  display: none;
+}
+
+
+.player-controls {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  z-index: 10;
+  margin-top: 48rpx;
+}
+
+.progress-bar-container {
+  width: 100%;
+  margin-bottom: 40rpx;
+  display: flex;
+  align-items: center;
+}
+
+.time-label {
+  font-size: 28rpx;
+  color: #333;
+  width: 100rpx;
+  text-align: center;
+}
+
+.progress-slider {
+  flex: 1;
+}
+
+.control-buttons {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  margin: 20rpx 0 40rpx 0;
+  width: 100%;
+}
+
+.control-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20rpx;
+  border-radius: 50%;
+  transition: all 0.2s;
+  width: 80rpx;
+  height: 80rpx;
+}
+
+.button-hover {
+  background-color: rgba(255, 255, 255, 0.3);
+  transform: scale(0.95);
+}
+
+.play-btn {
+  width: 220rpx;
+  height: 220rpx;
+}
+
+.control-icon {
+  width: 60%;
+  height: 60%;
+}
+
+.play-btn .control-icon {
+  width: 50%;
+  height: 50%;
+}
+
+/* 错误提示样式 */
+.error-message {
+  width: 90%;
+  padding: 20rpx;
+  background-color: rgba(255, 107, 129, 0.1);
+  border-radius: 10rpx;
+  margin: 20rpx 0;
+  text-align: center;
+}
+
+.error-message text {
+  color: #ff6b81;
+  font-size: 28rpx;
+}
+
+/* 测试区域样式 */
+.test-audio-section {
+  width: 90%;
+  margin-top: 40rpx;
+  margin-bottom: 40rpx;
+  padding: 30rpx;
+  background-color: rgba(255, 255, 255, 0.5);
+  border-radius: 16rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 5;
+  position: relative;
+}
+
+.section-title {
+  font-size: 32rpx;
+  color: #333;
+  margin-bottom: 20rpx;
+  font-weight: bold;
+}
+
+.test-buttons {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.test-btn {
+  background-color: #ff6b81;
+  color: white;
+  border-radius: 40rpx;
+  font-size: 28rpx;
+  padding: 10rpx 30rpx;
+  border: none;
+  margin-top: 10rpx;
+  margin-bottom: 10rpx;
+}
+
+/* 调试信息样式 */
+.debug-info {
+  width: 100%;
+  margin-top: 30rpx;
+  background-color: rgba(0, 0, 0, 0.05);
+  border-radius: 10rpx;
+  padding: 20rpx;
+}
+
+.debug-text {
+  font-size: 24rpx;
+  color: #555;
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 300rpx;
+  overflow-y: auto;
+}
+
+/* 简单控制按钮样式 */
+.simple-controls {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-bottom: 30rpx;
+  position: relative;
+  z-index: 10;
+}
+
+.primary-play-button {
+  width: 180rpx;
+  height: 180rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(255, 107, 129, 0.85);
+  box-shadow: 0 8rpx 16rpx rgba(0, 0, 0, 0.2);
+  transition: all 0.2s;
+}
+
+.primary-play-button .control-icon {
+  width: 40%;
+  height: 40%;
+}
+
+.primary-play-button.button-hover {
+  transform: scale(0.95);
+  background-color: rgba(255, 107, 129, 0.7);
+}

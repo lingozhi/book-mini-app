@@ -1,0 +1,29 @@
+<view class="container">
+  <view class="page-title">音频播放器示例</view>
+  
+  <!-- 音频播放器组件 -->
+  <audio-player 
+    id="audioPlayer"
+    audioSrc="{{audioSrc}}"
+    bind:statusChange="onAudioStatusChange"
+    bind:ended="onAudioEnded"
+    bind:error="onAudioError"
+    bind:audioChange="onAudioChange"
+    bind:audioSelect="onAudioSelect"
+    bind:speedChange="onSpeedChange"
+    bind:voiceChange="onVoiceChange">
+  </audio-player>
+
+  <!-- 使用说明 -->
+  <view class="instruction-section">
+    <view class="section-title">组件使用说明</view>
+    <view class="instruction-item">
+      <text class="instruction-label">功能：</text>
+      <text class="instruction-content">音频播放、暂停、切换、倍速播放、进度拖拽</text>
+    </view>
+    <view class="instruction-item">
+      <text class="instruction-label">当前状态：</text>
+      <text class="instruction-content">{{isPlaying ? '播放中' : '已暂停'}}，音频索引：{{currentAudioIndex + 1}}，声音类型：{{currentVoiceType === 'men' ? '男声' : '女声'}}</text>
+    </view>
+  </view>
+</view> 

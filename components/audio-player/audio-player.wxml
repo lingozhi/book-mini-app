@@ -1,0 +1,65 @@
+<view class="audio-player">
+  <!-- 标题与封面部分 -->
+  <view class="audio-header">
+    <view class="audio-title">{{title}}</view>
+  </view>
+  
+  <!-- 声音列表 -->
+  <view class="voice-box" wx:if="{{audioList.length > 0}}">
+    <view 
+      class="voice-item {{index === currentAudioIndex ? 'active' : ''}}" 
+      wx:for="{{audioList}}" 
+      wx:key="index"
+      data-index="{{index}}"
+      bind:tap="selectAudio">
+      <view class="voice-number">{{index + 1 < 10 ? '0' + (index + 1) : index + 1}}</view>
+      <view class="voice-text">{{item.title || '未命名音频'}}</view>
+      <view class="voice-play-icon">
+        <image src="{{index === currentAudioIndex && isPlaying ? '/assets/images/icon_pause.png' : '/assets/images/icon_play.png'}}" mode="widthFix" />
+      </view>
+    </view>
+  </view>
+  
+  <!-- 进度条部分 -->
+  <view class="progress-section">
+    <text class="time-text">{{currentTime}}</text>
+    <slider 
+      class="progress-slider" 
+      value="{{sliderValue}}" 
+      max="{{sliderMax}}" 
+      activeColor="#3370FF" 
+      backgroundColor="#E0E0E0"
+      block-size="12"
+      block-color="#3370FF"
+      bindchanging="onSliderChanging"
+      bindchange="onSliderChange" />
+    <text class="time-text">{{duration}}</text>
+  </view>
+  
+  <!-- 控制按钮部分 -->
+  <view class="control-section">
+    <view class="voice-btn" bind:tap="changeVoice">
+      <image src="{{currentVoice === 'men' ? '/assets/images/icon_men.png' : '/assets/images/icon_women.png'}}" mode="widthFix" />
+    </view>
+    
+    <!-- 上一首 -->
+    <view class="nav-btn prev-btn" bind:tap="prevAudio">
+      <image src="/assets/images/icon_prev.png" mode="widthFix" />
+    </view>
+    
+    <!-- 播放/暂停 -->
+    <view class="play-btn" bind:tap="togglePlay">
+      <image src="{{isPlaying ? '/assets/images/icon_pause_large.png' : '/assets/images/icon_play_large.png'}}" mode="widthFix" />
+    </view>
+    
+    <!-- 下一首 -->
+    <view class="nav-btn next-btn" bind:tap="nextAudio">
+      <image src="/assets/images/icon_next.png" mode="widthFix" />
+    </view>
+    
+    <!-- 播放速度 -->
+    <view class="speed-btn" bind:tap="setSpeed">
+      <text>{{doubleSpeed}}X</text>
+    </view>
+  </view>
+</view> 

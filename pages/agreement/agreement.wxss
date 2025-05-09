@@ -1,0 +1,23 @@
+.container {
+  min-height: 100vh;
+  background: #fff;
+  padding: 32rpx;
+}
+
+.title {
+  font-size: 36rpx;
+  font-weight: bold;
+  text-align: center;
+  margin-bottom: 40rpx;
+}
+
+.content {
+  height: calc(100vh - 64rpx);
+}
+
+.text {
+  font-size: 28rpx;
+  color: #333;
+  line-height: 1.8;
+  text-align: justify;
+}

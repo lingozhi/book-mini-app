@@ -1,0 +1,42 @@
+<view class="audio-player">
+  <view class="vinyl-container">
+    <view class="vinyl-record">
+      <image class="record-image" src="/images/audio/center-wheel.png"></image>
+    </view>
+  </view>
+  
+  <view class="chapter-title">{{chapter.title || '未知标题'}}</view>
+  
+  
+  <view class="player-controls">
+    <view class="progress-bar-container">
+      <view class="time-label">{{localCurrentTime || currentTime || '00:00'}}</view>
+      <slider 
+        class="progress-slider" 
+        block-size="12" 
+        activeColor="#ff6b81" 
+        backgroundColor="#e0e0e0" 
+        value="{{localProgress || progress || 0}}" 
+        bindchange="onProgressChange"
+      />
+      <view class="time-label">{{localDuration || duration || '--:--'}}</view>
+    </view>
+    
+    <view class="control-buttons">
+      <view class="control-btn" bindtap="onPrevTap">
+        <image class="control-icon" src="/images/audio/prev.png"></image>
+      </view>
+      <view class="control-btn play-btn" bindtap="onPlayTap">
+        <image class="control-icon" src="{{localIsPlaying || isPlaying ? '/images/audio/pause.png' : '/images/audio/play.png'}}"></image>
+      </view>
+      <view class="control-btn" bindtap="onNextTap">
+        <image class="control-icon" src="/images/audio/next.png"></image>
+      </view>
+    </view>
+  </view>
+  
+  <!-- 错误提示 -->
+  <view class="error-message" wx:if="{{error}}">
+    <text>{{error}}</text>
+  </view>
+</view> 

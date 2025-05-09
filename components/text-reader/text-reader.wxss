@@ -1,0 +1,41 @@
+.content {
+  height: 100%;
+  padding: 32rpx;
+  display: block;
+  background-color: #fff;
+}
+
+.content.night {
+  background: #222;
+  color: #bbb;
+}
+
+.chapter-title {
+  font-size: 36rpx;
+  font-weight: bold;
+  margin-bottom: 32rpx;
+  text-align: center;
+}
+
+.chapter-content {
+  font-size: 32rpx;
+  line-height: 1.8;
+  text-align: justify;
+}
+
+/* 富文本样式 */
+.chapter-content rich-text {
+  width: 100%;
+  display: block;
+}
+
+/* 确保富文本中的列表和段落等元素有正确的间距 */
+.chapter-content rich-text ol,
+.chapter-content rich-text ul {
+  padding-left: 40rpx;
+  margin: 20rpx 0;
+}
+
+.content.night rich-text {
+  color: #bbb;
+}

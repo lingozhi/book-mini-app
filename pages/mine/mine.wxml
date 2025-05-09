@@ -1,0 +1,28 @@
+<view class="container">
+  <view class="header-bg"></view>
+  <view class="content">
+    <view class="user-info">
+      <image class="avatar" src="{{userInfo.avatarUrl || 'https://mmbiz.qpic.cn/mmbiz/icTdbqWNOwNRna42FI242Lcia07jQodd2FJGIYQfG0LAJGFxM4FbnQP6yfMxBgJ0F3YRqJCJ1aPAK2dQagdusBZg/0'}}"></image>
+      <text class="nickname">{{userInfo.nickName || '微信用户'}}</text>
+    </view>
+
+    <view class="menu-list">
+      <view class="menu-item" bindtap="onMenuTap" data-type="service">
+        <text>用户服务协议</text>
+        <image class="arrow" src="/images/icons/arrow-right.png"></image>
+      </view>
+      <view class="menu-item" bindtap="onMenuTap" data-type="privacy">
+        <text>隐私协议</text>
+        <image class="arrow" src="/images/icons/arrow-right.png"></image>
+      </view>
+    </view>
+
+    <!-- <view wx:if="{{userInfo.nickName && !userInfo.phoneNumber}}" class="phone-btn">
+      <button open-type="getPhoneNumber" bindgetphonenumber="getPhoneNumber">绑定手机号</button>
+    </view> -->
+
+    <view class="logout-btn" bindtap="{{userInfo.nickName ? 'logout' : 'login'}}">
+      {{userInfo.nickName ? '退出登录' : '点击登录'}}
+    </view>
+  </view>
+</view> 

@@ -1,0 +1,143 @@
+.audio-player {
+  display: flex;
+  flex-direction: column;
+  background-color: #fff;
+  border-radius: 16rpx;
+  padding: 30rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.1);
+}
+
+/* 标题部分 */
+.audio-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 30rpx;
+}
+
+.audio-title {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #333;
+  margin-top: 10rpx;
+  text-align: center;
+}
+
+/* 声音列表 */
+.voice-box {
+  margin-bottom: 30rpx;
+  background-color: #f5f7fa;
+  border-radius: 12rpx;
+  padding: 10rpx;
+}
+
+.voice-item {
+  display: flex;
+  align-items: center;
+  padding: 20rpx;
+  margin-bottom: 10rpx;
+  border-radius: 8rpx;
+  background-color: #fff;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.voice-item.active {
+  background-color: #e6efff;
+  border-left: 8rpx solid #3370ff;
+}
+
+.voice-number {
+  width: 60rpx;
+  font-size: 28rpx;
+  color: #888;
+  margin-right: 20rpx;
+}
+
+.voice-text {
+  flex: 1;
+  font-size: 30rpx;
+  color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.voice-play-icon {
+  width: 40rpx;
+  height: 40rpx;
+}
+
+.voice-play-icon image {
+  width: 40rpx;
+  height: 40rpx;
+}
+
+/* 进度条部分 */
+.progress-section {
+  display: flex;
+  align-items: center;
+  margin-bottom: 40rpx;
+}
+
+.time-text {
+  font-size: 24rpx;
+  color: #666;
+  width: 80rpx;
+  text-align: center;
+}
+
+.progress-slider {
+  flex: 1;
+  margin: 0 20rpx;
+}
+
+/* 控制按钮部分 */
+.control-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 30rpx;
+}
+
+.voice-btn image {
+  width: 60rpx;
+  height: 60rpx;
+}
+
+.nav-btn image {
+  width: 50rpx;
+  height: 50rpx;
+}
+
+.play-btn {
+  width: 100rpx;
+  height: 100rpx;
+  background-color: #3370ff;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 0 8rpx 16rpx rgba(51, 112, 255, 0.3);
+}
+
+.play-btn image {
+  width: 50rpx;
+  height: 50rpx;
+}
+
+.speed-btn {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 80rpx;
+  height: 50rpx;
+  background-color: #f0f5ff;
+  border-radius: 25rpx;
+}
+
+.speed-btn text {
+  font-size: 24rpx;
+  color: #3370ff;
+  font-weight: bold;
+}

@@ -1,0 +1,33 @@
+<view class="container">
+  <scroll-view scroll-y class="book-grid">
+    <view class="book-list">
+      <view class="book-item" 
+            wx:for="{{books}}" 
+            wx:key="id"
+            bindtap="onBookTap"
+            data-id="{{item.id}}">
+        <view class="book-wrapper">
+          <image class="book-cover" 
+                 src="{{item.coverUrl}}" 
+                 mode="aspectFill"
+                 lazy-load></image>
+        </view>
+        <text class="book-title">{{item.title}}</text>
+        <text class="book-author">{{item.author}}</text>
+      </view>
+    </view>
+    
+    <view class="loading" wx:if="{{loading}}">
+      <view class="loading-spinner"></view>
+      <text class="loading-text">加载中...</text>
+    </view>
+    
+    <view class="empty-state" wx:if="{{!loading && books.length === 0}}">
+      <text class="empty-text">暂无书籍，点击下方按钮添加</text>
+    </view>
+  </scroll-view>
+
+  <!-- <view class="float-button" bindtap="onAddTap">
+    <image class="add-icon" src="/images/icons/add.png"></image>
+  </view> -->
+</view> 

@@ -1,0 +1,5 @@
+<view class="content {{theme}}">
+  <view class="chapter-content" style="font-size: {{fontSize}}rpx;">
+    <rich-text nodes="{{chapter.richText || chapter.content || '暂无内容'}}"></rich-text>
+  </view>
+</view> 

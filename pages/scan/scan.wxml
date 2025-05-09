@@ -1,0 +1,16 @@
+<view class="container">
+  <camera 
+    mode="scanCode" 
+    device-position="back" 
+    flash="auto"
+    bindscancode="onScanCode"
+    class="camera">
+    <cover-view class="scan-area">
+      <cover-view class="corner top-left"></cover-view>
+      <cover-view class="corner top-right"></cover-view>
+      <cover-view class="corner bottom-left"></cover-view>
+      <cover-view class="corner bottom-right"></cover-view>
+    </cover-view>
+    <cover-view class="scan-hint">将二维码放入框内，即可自动扫描</cover-view>
+  </camera>
+</view> 

@@ -1,0 +1,147 @@
+.container {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #f8f8f8;
+  position: relative;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+.header {
+  padding: 20rpx 32rpx;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #fff;
+  border-bottom: 1rpx solid rgba(0, 0, 0, 0.05);
+}
+
+.title {
+  font-size: 34rpx;
+  font-weight: 500;
+  color: #333;
+}
+
+.edit-btn {
+  font-size: 28rpx;
+  color: #666;
+  padding: 10rpx 20rpx;
+}
+
+.book-grid {
+  flex: 1;
+  padding: 24rpx 24rpx;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.book-list {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24rpx 20rpx;
+  padding: 20rpx 0;
+  width: 100%;
+}
+
+.book-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.book-wrapper {
+  position: relative;
+  transition: all 0.3s ease;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.book-cover {
+  width: 180rpx;
+  height: 240rpx;
+  border-radius: 12rpx;
+  box-shadow: 0 8rpx 16rpx rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.book-title {
+  margin-top: 16rpx;
+  font-size: 24rpx;
+  color: #333;
+  text-align: center;
+  width: 180rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.book-author {
+  font-size: 20rpx;
+  color: #999;
+  margin-top: 6rpx;
+}
+
+.float-button {
+  position: fixed;
+  right: 40rpx;
+  bottom: 40rpx;
+  width: 100rpx;
+  height: 100rpx;
+  background: linear-gradient(135deg, #ff6b81, #ff8c9f);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4rpx 12rpx rgba(255, 107, 129, 0.3);
+}
+
+.add-icon {
+  width: 40rpx;
+  height: 40rpx;
+}
+
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 30rpx 0;
+}
+
+.loading-spinner {
+  width: 40rpx;
+  height: 40rpx;
+  border: 4rpx solid rgba(0, 0, 0, 0.1);
+  border-top-color: #ff6b81;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-text {
+  font-size: 24rpx;
+  color: #999;
+  margin-top: 10rpx;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 100rpx 0;
+}
+
+.empty-text {
+  font-size: 28rpx;
+  color: #999;
+  text-align: center;
+}

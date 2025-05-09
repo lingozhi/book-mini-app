@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "书架",
+  "usingComponents": {},
+  "enablePullDownRefresh": true,
+  "backgroundTextStyle": "dark"
+} 

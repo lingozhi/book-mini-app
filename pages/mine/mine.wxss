@@ -1,0 +1,110 @@
+/* 基础布局 */
+.container {
+  min-height: 100vh;
+  background: #fff5f6;
+  position: relative;
+}
+
+/* 头部背景 */
+.header-bg {
+  height: 240rpx;
+  background: #ff6b81;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  border-radius: 0 0 50% 50% / 0 0 25% 25%;
+}
+
+/* 内容区域 */
+.content {
+  position: relative;
+  z-index: 1;
+  margin-top: -50rpx;
+}
+
+/* 用户信息 */
+.user-info {
+  text-align: center;
+  margin-bottom: 80rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatar {
+  width: 160rpx;
+  height: 160rpx;
+  border-radius: 50%;
+  border: 4rpx solid rgba(255, 255, 255, 0.8);
+  margin-bottom: 16rpx;
+}
+
+.nickname {
+  color: #472727;
+  font-size: 36rpx;
+  font-weight: 600;
+  line-height: 50rpx;
+  font-family: PingFang SC;
+  font-style: normal;
+}
+
+/* 菜单列表 */
+.menu-list {
+  padding: 40rpx 0;
+}
+
+/* 通用按钮样式 */
+.menu-item,
+.logout-btn {
+  width: 630rpx;
+  height: 114rpx;
+  background: #fff;
+  border-radius: 124rpx;
+  margin: 0 auto 20rpx;
+}
+
+.menu-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 40rpx;
+  box-sizing: border-box;
+}
+
+.menu-item text {
+  font-size: 28rpx;
+  color: #333;
+}
+
+.arrow {
+  width: 32rpx;
+  height: 32rpx;
+}
+
+/* 退出按钮 */
+.logout-btn {
+  line-height: 114rpx;
+  text-align: center;
+  font-size: 28rpx;
+  color: #333;
+  margin-top: 60rpx;
+}
+
+/* 手机号绑定按钮 */
+.phone-btn {
+  width: 630rpx;
+  margin: 0 auto 20rpx;
+}
+
+.phone-btn button {
+  width: 100%;
+  height: 114rpx;
+  background: #fff;
+  border-radius: 124rpx;
+  font-size: 28rpx;
+  color: #333;
+  line-height: 114rpx;
+  border: none;
+}

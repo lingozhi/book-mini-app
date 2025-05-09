@@ -1,0 +1,96 @@
+<view class="reader-container" bindtap="{{contentType !== 'audio' ? 'toggleControls' : ''}}">
+
+  <!-- 音频播放界面 -->
+  <audio-reader 
+    id="audio-reader"
+    wx:if="{{contentType === 'audio'}}"
+    chapter="{{chapter}}"
+    isPlaying="{{isPlaying}}"
+    currentTime="{{currentTime}}"
+    duration="{{duration}}"
+    progress="{{progress}}"
+    bind:togglePlay="togglePlay"
+    bind:prev="prevChapter"
+    bind:next="nextChapter"
+    bind:progressChange="onProgressChange"
+    bind:timeUpdate="onAudioTimeUpdate"
+    bind:statusUpdate="onAudioStatusUpdate"
+    bind:error="onAudioError"
+  ></audio-reader>
+
+
+  <!-- 视频播放界面 -->
+  <video-reader 
+    wx:elif="{{contentType === 'video'}}"
+    chapter="{{chapter}}"
+    videoUrl="{{videoUrl}}"
+    bind:videoReady="onVideoReady"
+    bind:videoLoaded="onVideoLoaded"
+    bind:fullscreenchange="onVideoFullscreenChange"
+    bind:videoerror="onVideoError"
+    bind:statechange="onVideoStateChange"
+    bind:ended="onVideoEnded"
+    bind:prev="prevChapter"
+    bind:next="nextChapter"
+    bind:rotatechange="onVideoRotateChange"
+  ></video-reader>
+
+  <!-- 图书集合界面 -->
+  <book-collection 
+    wx:elif="{{contentType === 'collection'}}"
+    collection="{{collection}}"
+    bind:bookSelect="onBookTap"
+  ></book-collection>
+
+  <!-- 文本阅读界面 -->
+  <text-reader 
+    wx:else
+    chapter="{{chapter}}"
+    fontSize="{{fontSize}}"
+    theme="{{theme}}"
+    bind:scroll="onScroll"
+  ></text-reader>
+
+  <view class="controls {{showControls ? 'show' : ''}}">
+    <view class="bottom-bar" wx:if="{{contentType !== 'collection' && contentType !== 'audio'}}">
+      
+      <!-- 文本阅读控制按钮 -->
+      <view class="actions">
+        <view class="action-item" bindtap="prevChapter">上一章</view>
+        <view class="action-item" bindtap="toggleTheme">
+          <image src="/images/icons/theme.png"></image>
+        </view>
+        <view class="action-item" bindtap="toggleFontPanel">
+          <image src="/images/icons/font.png"></image>
+        </view>
+        <view class="action-item" bindtap="nextChapter">下一章</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 字体大小面板 -->
+  <view class="font-panel {{showFontPanel ? 'show' : ''}}">
+    <view class="font-size-control">
+      <view class="size-btn {{fontSize <= 28 ? 'disabled' : ''}}" bindtap="decreaseFontSize">A-</view>
+      <view class="size-preview">{{fontSize}}</view>
+      <view class="size-btn {{fontSize >= 48 ? 'disabled' : ''}}" bindtap="increaseFontSize">A+</view>
+    </view>
+  </view>
+
+  <!-- 目录面板 -->
+  <view class="catalog-panel {{showCatalog ? 'show' : ''}}">
+    <view class="catalog-header">
+      <view class="catalog-title">目录</view>
+      <view class="catalog-close" bindtap="hideCatalog">×</view>
+    </view>
+    <scroll-view scroll-y class="catalog-content">
+      <view class="catalog-item {{currentChapter === index + 1 ? 'active' : ''}}"
+            wx:for="{{chapters}}"
+            wx:key="index"
+            bindtap="jumpToChapter"
+            data-chapter="{{index + 1}}">
+        第{{index + 1}}章 {{item.title}}
+      </view>
+    </scroll-view>
+  </view>
+</view> 

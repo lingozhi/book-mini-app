@@ -1,0 +1,20 @@
+<view class="collection-view">
+  <view class="collection-grid">
+    <view class="book-item"
+          wx:for="{{collection}}"
+          wx:key="id"
+          bindtap="openBook"
+          data-id="{{item.id}}">
+      <view class="book-cover-container">
+        <image class="book-cover" src="{{item.cover}}" mode="aspectFill"></image>
+        <!-- 内容类型标识 -->
+        <view class="content-type-badge" wx:if="{{item.type}}">
+          <text wx:if="{{item.type === 1}}">视频</text>
+          <text wx:elif="{{item.type === 2}}">音频</text>
+          <text wx:elif="{{item.type === 3}}">文本</text>
+        </view>
+      </view>
+      <view class="book-title">{{item.title}}</view>
+    </view>
+  </view>
+</view> 

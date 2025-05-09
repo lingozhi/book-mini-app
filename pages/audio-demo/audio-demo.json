@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "音频播放器",
+  "usingComponents": {
+    "audio-player": "/components/audio-player/audio-player"
+  }
+} 
