@@ -1,3 +1,6 @@
+// 导入音频管理器
+const audioManager = require('../../utils/audioManager');
+
 Component({
   properties: {
     audioSrc: {
@@ -51,12 +54,10 @@ Component({
   methods: {
     // 初始化音频上下文
     initializeAudio(url) {
-      // 释放之前的音频上下文
-      this.releaseAudioContext();
-      
-      // 创建新的音频上下文
-      this.audioContext = wx.createInnerAudioContext();
-      this.audioContext.src = url;
+      // 使用音频管理器创建音频上下文
+      this.audioContext = audioManager.createAudio(url, {
+        playbackRate: this.data.doubleSpeed
+      });
       
       // 设置事件监听
       this.audioContext.onCanplay(() => {
@@ -110,20 +111,12 @@ Component({
         // 触发错误事件
         this.triggerEvent('error', err);
       });
-      
-      // 应用当前的播放速率
-      if (this.data.doubleSpeed !== 1.0) {
-        this.audioContext.playbackRate = this.data.doubleSpeed;
-      }
     },
     
     // 释放音频上下文资源
     releaseAudioContext() {
-      if (this.audioContext) {
-        this.audioContext.stop();
-        this.audioContext.destroy();
-        this.audioContext = null;
-      }
+      // 不再需要单独释放，由音频管理器统一管理
+      this.audioContext = null;
     },
     
     // 播放音频

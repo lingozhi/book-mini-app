@@ -1,5 +1,8 @@
 const app = getApp();
 
+// 导入音频管理器
+const audioManager = require('../../utils/audioManager');
+
 Page({
   data: {
     bookId: '',
@@ -545,11 +548,9 @@ Page({
   },
 
   onUnload() {
-    // 销毁音频上下文
-    if (this.audioContext) {
-      this.audioContext.stop();
-      this.audioContext.destroy();
-    }
+    // 不再需要手动销毁音频上下文
+    // 由audioManager负责管理
+    this.audioContext = null;
     
     // 保存阅读进度
     this.saveReadingProgress();
@@ -792,9 +793,10 @@ Page({
 
   // 辅助方法：加载音频播放器
   loadAudioPlayer(audioUrl) {
-    const audioContext = wx.createInnerAudioContext();
-    audioContext.src = audioUrl;
-    audioContext.autoplay = true;
+    // 使用音频管理器创建音频上下文
+    const audioContext = audioManager.createAudio(audioUrl, {
+      autoplay: true
+    });
     
     // 设置音频事件监听
     audioContext.onPlay(() => {

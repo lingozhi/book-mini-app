@@ -1,4 +1,5 @@
 const app = getApp();
+const audioManager = require('../../utils/audioManager');
 
 // 播放模式常量
 const PLAY_MODE = {
@@ -339,15 +340,8 @@ Page({
   },
 
   initAudioPlayer() {
-    // 如果存在旧的audioContext，先停止并销毁
-    if (this.audioContext) {
-      try {
-        this.audioContext.stop();
-        this.audioContext.destroy();
-      } catch (err) {
-        console.error('Error destroying previous audio context:', err);
-      }
-    }
+    // 不再需要手动停止和销毁旧的audioContext
+    // 由audioManager负责管理
     
     // 确保URL有效
     let audioUrl = this.data.url;
@@ -371,22 +365,12 @@ Page({
       // 继续使用原始URL
     }
     
-    // 创建新的audioContext
-    const audioContext = wx.createInnerAudioContext();
+    // 使用音频管理器创建新的audioContext
+    const audioContext = audioManager.createAudio(audioUrl, {
+      autoplay: true
+    });
     
-    // 设置并加载音频
-    try {
-      audioContext.src = audioUrl;
-      audioContext.autoplay = true;
-      console.log('Audio context created with URL:', audioUrl);
-    } catch (err) {
-      console.error('Error setting audio source:', err);
-      wx.showToast({
-        title: '播放失败',
-        icon: 'none'
-      });
-      return;
-    }
+    console.log('Audio context created with URL:', audioUrl);
     
     // 设置音频事件监听
     audioContext.onCanplay(() => {
