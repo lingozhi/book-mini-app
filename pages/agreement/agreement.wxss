@@ -20,4 +20,5 @@
   color: #333;
   line-height: 1.8;
   text-align: justify;
+  white-space: pre-wrap;
 }

@@ -2,6 +2,7 @@ const request = require('../../utils/request');
 
 Page({
   data: {
+    isScanning: false
   },
 
   onLoad() {
@@ -29,6 +30,14 @@ Page({
   },
 
   onScanCode(e) {
+    // 防止重复扫描
+    if (this.data.isScanning) {
+      return;
+    }
+    
+    // 设置扫描标志
+    this.setData({ isScanning: true });
+    
     const isbn = e.detail.result;
     // 打印扫描结果到控制台
     console.log('扫码识别结果:', isbn);
@@ -48,6 +57,7 @@ Page({
         title: '请先登录',
         icon: 'none'
       });
+      this.setData({ isScanning: false });
       return;
     }
 
@@ -55,7 +65,6 @@ Page({
       isbn: isbn
     }, true, token)
       .then(res => {
-        console.log(res,222222222222);
         wx.hideLoading();
         wx.showToast({
           title: '导入成功',
@@ -68,12 +77,44 @@ Page({
         });
       })
       .catch(err => {
-        console.log(err,1111111111111111111);
         wx.hideLoading();
-        wx.showToast({
-          title: err.message || '导入失败',
-          icon: 'none'
-        });
+        console.log(err,1111111111111111111);
+        
+        // 处理书籍已存在的情况
+        if (err && err.errorCode === "400" && err.message && err.message.includes("该书籍已存在")) {
+          wx.showToast({
+            title: '书籍已在书架中',
+            icon: 'success'
+          });
+          
+          // 仍然返回书架页面，因为操作本质上是成功的
+          setTimeout(() => {
+            wx.switchTab({
+              url: '/pages/bookshelf/bookshelf'
+            });
+          }, 1500);
+        } else {
+          // 处理其他错误
+          wx.showToast({
+            title: err.data.message || '导入失败',
+            icon: 'none'
+          });
+          
+          // 重置扫描状态，允许用户再次尝试
+          setTimeout(() => {
+            this.setData({ isScanning: false });
+          }, 2000);
+        }
       });
+  },
+  
+  // 页面隐藏时重置扫描状态
+  onHide() {
+    this.setData({ isScanning: false });
+  },
+  
+  // 页面卸载时重置扫描状态
+  onUnload() {
+    this.setData({ isScanning: false });
   }
 }); 
