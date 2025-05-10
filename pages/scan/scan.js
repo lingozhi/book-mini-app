@@ -39,18 +39,41 @@ Page({
       title: '识别中...'
     });
 
-    // 这里应该调用后端API处理扫描结果
-    setTimeout(() => {
+    // 调用后端API导入书籍
+    const token = wx.getStorageSync('token');
+    
+    if (!token) {
       wx.hideLoading();
       wx.showToast({
-        title: '导入成功',
-        icon: 'success'
+        title: '请先登录',
+        icon: 'none'
       });
-      
-      // 返回书架页面
-      wx.switchTab({
-        url: '/pages/bookshelf/bookshelf'
+      return;
+    }
+
+    request.post('/user-book/export', {
+      isbn: isbn
+    }, true, token)
+      .then(res => {
+        console.log(res,222222222222);
+        wx.hideLoading();
+        wx.showToast({
+          title: '导入成功',
+          icon: 'success'
+        });
+        
+        // 返回书架页面
+        wx.switchTab({
+          url: '/pages/bookshelf/bookshelf'
+        });
+      })
+      .catch(err => {
+        console.log(err,1111111111111111111);
+        wx.hideLoading();
+        wx.showToast({
+          title: err.message || '导入失败',
+          icon: 'none'
+        });
       });
-    }, 1500);
   }
 }); 

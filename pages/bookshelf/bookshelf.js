@@ -57,7 +57,7 @@ Page({
     }
     
     // 使用 request 工具发送请求
-    request.post('/book/list', {
+    request.post('/user-book/list', {
       pageIndex: this.data.pageIndex,
       pageSize: this.data.pageSize
     }, true, token)
@@ -111,7 +111,7 @@ Page({
 
   onAddTap() {
     wx.navigateTo({
-      url: '/pages/bookstore/bookstore'
+      url: '/pages/scan/scan'
     });
   },
   
