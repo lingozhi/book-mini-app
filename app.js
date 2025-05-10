@@ -3,8 +3,8 @@ App({
   globalData: {
     userInfo: null,
     isLoggedIn: false,
-    // baseUrl: 'https://applet.quxiangbook.com/api', // 替换为你的实际接口地址
-     baseUrl: 'http://120.76.156.99:8080', // 替换为你的实际接口地址
+    baseUrl: 'https://applet.quxiangbook.com/api', // 替换为你的实际接口地址
+    //  baseUrl: 'http://120.76.156.99:8080', // 替换为你的实际接口地址
     books: [
       {
         id: '1',
@@ -67,7 +67,16 @@ App({
         author: '末日游戏'
       }
     ],
-    readingProgress: {}
+    readingProgress: {},
+    // 添加全局音频播放列表
+    audioList: [],
+    currentBookId: '', // 当前正在阅读的书籍ID
+    currentAudioIndex: 0, // 当前播放的音频索引
+    
+    // 新增背景播放相关变量
+    isPlayingInBackground: false, // 是否在后台播放
+    currentAudioContext: null, // 当前播放的音频上下文
+    currentTrack: null // 当前播放的音频信息
   },
 
   onLaunch() {

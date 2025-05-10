@@ -3,6 +3,7 @@
   min-height: 100vh;
   background: #fff5f6;
   position: relative;
+  padding-bottom: 100rpx; /* 为迷你播放器留出空间 */
 }
 
 /* 头部背景 */

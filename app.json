@@ -4,6 +4,7 @@
     "pages/scan/scan",
     "pages/mine/mine",
     "pages/reader/reader",
+    "pages/reader/play",
     "pages/bookstore/bookstore",
     "pages/agreement/agreement"
   ],
@@ -41,5 +42,8 @@
         "selectedIconPath": "images/tabbar/mine-active.png"
       }
     ]
+  },
+  "usingComponents": {
+    "mini-player": "/components/mini-player/mini-player"
   }
 }

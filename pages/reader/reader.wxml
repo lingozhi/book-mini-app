@@ -1,9 +1,96 @@
-<view class="reader-container" bindtap="{{contentType !== 'audio' ? 'toggleControls' : ''}}">
+<view class="reader-container">
+  <!-- 书籍信息头部 -->
+  <view class="book-header">
+    <view class="book-info">
+      <image class="book-cover" src="{{bookCover || '/images/default-cover.png'}}"></image>
+      <view class="book-details">
+        <view class="book-title">{{bookTitle || '未知书籍'}}</view>
+        <view class="book-meta">
+          <text class="age-range">{{bookAgeRange || ''}}</text>
+          <text class="language">{{bookLanguage || ''}}</text>
+          <text class="type">{{bookType || ''}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 内容类型选项卡 -->
+  <view class="content-tabs">
+    <view class="tab {{activeTab === 'audio' ? 'active' : ''}}" bindtap="switchTab" data-tab="audio">
+      <text>音频</text>
+    </view>
+    <view class="tab {{activeTab === 'video' ? 'active' : ''}}" bindtap="switchTab" data-tab="video">
+      <text>视频</text>
+    </view>
+  </view>
+
+  <!-- 内容列表区域 -->
+  <view class="content-list-container">
+    <!-- 音频列表 -->
+    <view class="content-list {{activeTab === 'audio' ? 'show' : 'hide'}}">
+      <view class="debug-info" wx:if="{{audioList}}">音频数量: {{audioList.length}}</view>
+      
+      <view class="loading-container" wx:if="{{audioLoading}}">
+        <view class="loading-indicator"></view>
+        <text class="loading-text">加载中...</text>
+      </view>
+      
+      <scroll-view scroll-y class="list-scroll-view" wx:elif="{{audioList && audioList.length > 0}}">
+        <view wx:for="{{audioList}}" 
+              wx:key="id" 
+              class="content-item"
+              bindtap="playAudio" 
+              data-index="{{index}}">
+          <view class="item-info">
+            <image class="item-icon" src="/images/audio/play.png"></image>
+            <view class="item-title">{{item.title || '未知标题'}}</view>
+          </view>
+          <view class="item-stats">
+            <text class="play-count">{{item.playCount || 0}}</text>
+          </view>
+        </view>
+      </scroll-view>
+      
+      <view class="empty-list" wx:elif="{{!audioList || audioList.length === 0}}">
+        <text>暂无音频内容</text>
+      </view>
+    </view>
+
+    <!-- 视频列表 -->
+    <view class="content-list {{activeTab === 'video' ? 'show' : 'hide'}}">
+      <view class="debug-info" wx:if="{{videoList}}">视频数量: {{videoList.length}}</view>
+      
+      <view class="loading-container" wx:if="{{videoLoading}}">
+        <view class="loading-indicator"></view>
+        <text class="loading-text">加载中...</text>
+      </view>
+      
+      <scroll-view scroll-y class="list-scroll-view" wx:elif="{{videoList && videoList.length > 0}}">
+        <view wx:for="{{videoList}}" 
+              wx:key="id" 
+              class="content-item"
+              bindtap="playVideo" 
+              data-index="{{index}}">
+          <view class="item-info">
+            <image class="item-icon" src="/images/icons/play.png"></image>
+            <view class="item-title">{{item.title || '未知标题'}}</view>
+          </view>
+          <view class="item-stats">
+            <text class="play-count">{{item.playCount || 0}}</text>
+          </view>
+        </view>
+      </scroll-view>
+      
+      <view class="empty-list" wx:elif="{{!videoList || videoList.length === 0}}">
+        <text>暂无视频内容</text>
+      </view>
+    </view>
+  </view>
 
   <!-- 音频播放界面 -->
   <audio-reader 
     id="audio-reader"
-    wx:if="{{contentType === 'audio'}}"
+    wx:if="{{contentType === 'audio' && isPlaying}}"
     chapter="{{chapter}}"
     isPlaying="{{isPlaying}}"
     currentTime="{{currentTime}}"
@@ -18,10 +105,9 @@
     bind:error="onAudioError"
   ></audio-reader>
 
-
   <!-- 视频播放界面 -->
   <video-reader 
-    wx:elif="{{contentType === 'video'}}"
+    wx:if="{{contentType === 'video' && isPlaying}}"
     chapter="{{chapter}}"
     videoUrl="{{videoUrl}}"
     bind:videoReady="onVideoReady"
@@ -37,14 +123,14 @@
 
   <!-- 图书集合界面 -->
   <book-collection 
-    wx:elif="{{contentType === 'collection'}}"
+    wx:if="{{contentType === 'collection'}}"
     collection="{{collection}}"
     bind:bookSelect="onBookTap"
   ></book-collection>
 
   <!-- 文本阅读界面 -->
   <text-reader 
-    wx:else
+    wx:if="{{contentType === 'text'}}"
     chapter="{{chapter}}"
     fontSize="{{fontSize}}"
     theme="{{theme}}"
@@ -93,4 +179,7 @@
       </view>
     </scroll-view>
   </view>
+  
+  <!-- 添加迷你播放器组件 -->
+  <mini-player></mini-player>
 </view> 

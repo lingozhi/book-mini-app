@@ -25,4 +25,7 @@
       {{userInfo.nickName ? '退出登录' : '点击登录'}}
     </view>
   </view>
+  
+  <!-- 添加迷你播放器组件 -->
+  <mini-player></mini-player>
 </view> 

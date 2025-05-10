@@ -1,0 +1,47 @@
+<view class="mini-player" wx:if="{{showPlayer}}">
+  <view class="player-content">
+    <view class="close-btn" catchtap="closePlayer">
+      <text class="close-text" style="font-weight: bold;">✕</text>
+    </view>
+    <view class="track-info" bindtap="navigateToPlayer">
+      <view class="cover-container">
+        <view class="vinyl {{isPlaying ? 'rotating' : ''}}">
+          <view class="inner-circle"></view>
+        </view>
+      </view>
+      <text class="title">{{track.title}}</text>
+    </view>
+    <view class="controls">
+      <view class="play-btn" catchtap="togglePlay">
+        <image src="{{isPlaying ? '/images/audio/pause.png' : '/images/audio/play.png'}}" mode="aspectFit"></image>
+      </view>
+      <view class="list-btn" catchtap="togglePlaylist">
+        <text>≡</text>
+      </view>
+    </view>
+  </view>
+  
+  <!-- 播放列表面板 -->
+  <view class="playlist-panel {{showPlaylist ? 'show' : ''}}">
+    <view class="playlist-header">
+      <text class="playlist-title">播放列表</text>
+      <text class="playlist-close" bindtap="togglePlaylist">✕</text>
+    </view>
+    <scroll-view scroll-y class="playlist-content">
+      <view wx:if="{{!playlistItems || playlistItems.length === 0}}" class="playlist-empty">
+        <text>暂无播放列表</text>
+      </view>
+      <view wx:else class="playlist-items">
+        <view 
+          wx:for="{{playlistItems}}" 
+          wx:key="id" 
+          class="playlist-item {{currentAudioIndex === index ? 'active' : ''}}"
+          bindtap="selectTrack"
+          data-index="{{index}}">
+          <text class="item-title">{{item.title}}</text>
+          <text wx:if="{{currentAudioIndex === index}}" class="playing-icon">♪</text>
+        </view>
+      </view>
+    </scroll-view>
+  </view>
+</view>

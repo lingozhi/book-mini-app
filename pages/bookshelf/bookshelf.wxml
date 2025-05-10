@@ -30,4 +30,7 @@
   <!-- <view class="float-button" bindtap="onAddTap">
     <image class="add-icon" src="/images/icons/add.png"></image>
   </view> -->
+  
+  <!-- 添加迷你播放器组件 -->
+  <mini-player></mini-player>
 </view> 

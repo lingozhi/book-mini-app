@@ -4,7 +4,16 @@ Page({
   data: {
     bookId: '',
     bookTitle: '',
-    contentType: 'text', // 'text', 'audio', 'video', 'collection'
+    bookCover: '',
+    bookAgeRange: '',
+    bookLanguage: '',
+    bookType: '',
+    contentType: 'list', // 'text', 'audio', 'video', 'collection', 'list'
+    activeTab: 'audio', // Default tab
+    audioList: [],
+    videoList: [],
+    audioLoading: false,
+    videoLoading: false,
     chapter: {
       title: '',
       content: ''
@@ -74,10 +83,15 @@ Page({
         
         if (res.statusCode === 200 && res.data.code === 200) {
           const bookData = res.data.data;
+          console.log('Book data received:', bookData);
           
-          // 设置书籍标题
+          // 设置书籍详情
           this.setData({
-            bookTitle: bookData.name
+            bookTitle: bookData.name,
+            bookCover: bookData.coverPath || '/images/default-cover.png',
+            bookAgeRange: bookData.ageRange || '',
+            bookLanguage: bookData.language || '',
+            bookType: bookData.type || ''
           });
 
           // 判断内容类型
@@ -88,7 +102,7 @@ Page({
               this.handleCollectionBook(bookData);
             } else if (bookData.contents && bookData.contents.length > 0) {
               // 处理内容集合（当series为true但sonBooks为空时）
-              this.handleSeriesContents(bookData.contents);
+              this.processContents(bookData.contents);
             } else {
               wx.showToast({
                 title: '该书暂无内容',
@@ -97,12 +111,10 @@ Page({
             }
           } else if (bookData.contents && bookData.contents.length > 0) {
             // 处理图书内容
-            this.handleBookContents(bookData.contents);
+            this.processContents(bookData.contents);
           } else {
-            wx.showToast({
-              title: '该书暂无内容',
-              icon: 'none'
-            });
+            // 如果没有直接返回内容，则请求单独的内容API
+            this.fetchAudioList();
           }
         } else {
           console.error('API返回错误:', res.data);
@@ -151,32 +163,6 @@ Page({
     this.setData({
       contentType: 'collection',
       collection: collection
-    });
-  },
-
-  handleBookContents(contents) {
-    // 所有类型的内容都先以列表形式展示
-    const collection = contents.map(content => ({
-      id: content.id,
-      title: content.name,
-      cover: content.coverPath || '/images/default-cover.png',
-      type: content.type,
-      url: content.filePath,
-      richText: content.richText
-    }));
-
-    this.setData({
-      contentType: 'collection',
-      collection: collection,
-      // 保存章节信息以供后续使用
-      chapters: contents.map((content, index) => ({
-        id: content.id,
-        title: content.name,
-        url: content.filePath,
-        type: content.type,
-        content: content.richText
-      })),
-      totalChapters: contents.length
     });
   },
 
@@ -331,27 +317,12 @@ Page({
 
   togglePlay() {
     if (this.data.contentType === 'audio') {
-      console.log('触发播放/暂停切换，当前状态:', this.data.isPlaying ? '播放中' : '已暂停');
-      
-      // 获取audio-reader组件实例
-      const audioReader = this.selectComponent('#audio-reader');
-      if (audioReader) {
-        console.log('找到音频组件，切换播放状态');
-        
-        // 反转播放状态
-        const newPlayState = !this.data.isPlaying;
-        
-        // 直接调用组件的onPlayTap方法模拟按钮点击
-        audioReader.onPlayTap();
-        
-        // 我们依赖组件通过statusUpdate事件来更新isPlaying状态
-        console.log('播放状态切换请求已发送');
-      } else {
-        console.error('未找到音频组件，无法控制播放');
-        wx.showToast({
-          title: '播放器加载中...',
-          icon: 'none'
-        });
+      if (this.audioContext) {
+        if (this.data.isPlaying) {
+          this.audioContext.pause();
+        } else {
+          this.audioContext.play();
+        }
       }
     } else if (this.data.contentType === 'video') {
       if (this.data.isPlaying) {
@@ -574,30 +545,19 @@ Page({
   },
 
   onUnload() {
-    // 页面卸载时释放资源
-    console.log('Reader page unloading, cleaning up resources');
-    
-    // 获取音频组件并停止播放
-    if (this.data.contentType === 'audio') {
-      const audioReader = this.selectComponent('audio-reader') || this.selectComponent('#audio-reader');
-      if (audioReader) {
-        console.log('Stopping audio reader component');
-        // 调用组件的pause方法
-        this.setData({ isPlaying: false });
-      }
-    }
-    
-    // 释放可能存在的直接音频资源
+    // 销毁音频上下文
     if (this.audioContext) {
-      console.log('Cleaning up direct audio context');
       this.audioContext.stop();
       this.audioContext.destroy();
-      this.audioContext = null;
     }
     
-    if (this.videoContext) {
-      console.log('Cleaning up video context');
-      this.videoContext = null;
+    // 保存阅读进度
+    this.saveReadingProgress();
+    
+    // 停止背景音频播放器
+    const innerAudioContext = getApp().globalData.innerAudioContext;
+    if (innerAudioContext) {
+      innerAudioContext.stop();
     }
   },
   
@@ -663,5 +623,285 @@ Page({
     
     // 状态会通过事件更新，不需要在这里设置
     console.log('已发送音频控制命令:', newState ? '播放' : '暂停');
+  },
+
+  // 新增方法：获取音频列表
+  fetchAudioList() {
+    wx.showLoading({
+      title: '加载中...',
+    });
+
+    const token = wx.getStorageSync('token');
+    if (!token) {
+      wx.hideLoading();
+      wx.showToast({
+        title: '请先登录',
+        icon: 'none'
+      });
+      return;
+    }
+
+    wx.request({
+      url: `${app.globalData.baseUrl}/book/content/list`,
+      method: 'GET',
+      data: {
+        bookId: this.data.bookId,
+        type: 'audio'
+      },
+      header: {
+        'content-type': 'application/json',
+        'token': token
+      },
+      success: (res) => {
+        wx.hideLoading();
+        
+        if (res.statusCode === 200 && res.data.code === 200) {
+          const audioList = res.data.data.map(content => ({
+            id: content.id,
+            title: content.name,
+            cover: content.coverPath || '/images/default-cover.png',
+            type: 'audio',
+            url: content.filePath,
+            richText: content.richText,
+            playCount: content.playCount || 0
+          }));
+          
+          console.log('Fetched audio list:', audioList.length, 'items');
+          
+          // 保存到全局状态
+          app.globalData.audioList = audioList;
+          app.globalData.currentBookId = this.data.bookId;
+          console.log('Saved audio list to global state:', audioList.length, 'items for book', this.data.bookId);
+          
+          // 更新本地数据状态
+          this.setData({
+            audioList,
+            activeTab: 'audio',
+            contentType: audioList.length > 0 ? 'list' : 'text'
+          });
+        } else {
+          console.error('Failed to fetch audio list:', res);
+          wx.showToast({
+            title: '获取音频列表失败',
+            icon: 'none'
+          });
+        }
+      },
+      fail: (err) => {
+        wx.hideLoading();
+        console.error('Network error when fetching audio list:', err);
+        wx.showToast({
+          title: '网络错误',
+          icon: 'none'
+        });
+      }
+    });
+  },
+
+  // 新增方法：获取视频列表
+  fetchVideoList() {
+    const token = wx.getStorageSync('token');
+    if (!token) return;
+
+    this.setData({ videoLoading: true });
+    
+    wx.request({
+      url: `${app.globalData.baseUrl}/book/content/list`,
+      method: 'GET',
+      data: {
+        bookId: this.data.bookId,
+        type: 'video'  // 指定获取视频类型内容
+      },
+      header: {
+        'content-type': 'application/json',
+        'token': token
+      },
+      success: (res) => {
+        this.setData({ videoLoading: false });
+        
+        if (res.statusCode === 200 && res.data.code === 200) {
+          const videoList = res.data.data.map(item => ({
+            id: item.id,
+            title: item.name,
+            cover: item.coverPath || '/images/default-cover.png',
+            type: 'video',
+            url: item.filePath,
+            richText: item.richText,
+            playCount: item.playCount || 0
+          }));
+          
+          this.setData({ videoList });
+        } else {
+          wx.showToast({
+            title: res.data.message || '获取视频列表失败',
+            icon: 'none'
+          });
+        }
+      },
+      fail: (err) => {
+        this.setData({ videoLoading: false });
+        wx.showToast({
+          title: '网络错误',
+          icon: 'none'
+        });
+      }
+    });
+  },
+
+  // 修改标签切换方法，加载对应内容
+  switchTab(e) {
+    const tab = e.currentTarget.dataset.tab;
+    this.setData({ 
+      activeTab: tab,
+      contentType: 'list'  // 确保切换标签时内容类型为列表模式
+    });
+    
+    // 根据标签类型获取对应内容
+    if (tab === 'audio' && this.data.audioList.length === 0) {
+      this.fetchAudioList();
+    } else if (tab === 'video' && this.data.videoList.length === 0) {
+      this.fetchVideoList();
+    }
+  },
+
+  // 新增方法：播放音频
+  playAudio(e) {
+    const index = e.currentTarget.dataset.index;
+    const audio = this.data.audioList[index];
+    
+    if (!audio) return;
+    
+    // 导航到音频播放页面，传递必要参数
+    wx.navigateTo({
+      url: `/pages/reader/play?id=${audio.id}&type=audio&title=${encodeURIComponent(audio.title)}&url=${encodeURIComponent(audio.url)}&bookId=${this.data.bookId}`
+    });
+  },
+
+  // 新增方法：播放视频
+  playVideo(e) {
+    const index = e.currentTarget.dataset.index;
+    const video = this.data.videoList[index];
+    
+    if (!video) return;
+    
+    // 导航到视频播放页面，传递必要参数
+    wx.navigateTo({
+      url: `/pages/reader/play?id=${video.id}&type=video&title=${encodeURIComponent(video.title)}&url=${encodeURIComponent(video.url)}&bookId=${this.data.bookId}`
+    });
+  },
+
+  // 辅助方法：加载音频播放器
+  loadAudioPlayer(audioUrl) {
+    const audioContext = wx.createInnerAudioContext();
+    audioContext.src = audioUrl;
+    audioContext.autoplay = true;
+    
+    // 设置音频事件监听
+    audioContext.onPlay(() => {
+      this.setData({ isPlaying: true });
+    });
+    
+    audioContext.onPause(() => {
+      this.setData({ isPlaying: false });
+    });
+    
+    audioContext.onTimeUpdate(() => {
+      const currentTime = this.formatTime(audioContext.currentTime);
+      const duration = this.formatTime(audioContext.duration);
+      const progress = audioContext.duration > 0 
+        ? (audioContext.currentTime / audioContext.duration) * 100 
+        : 0;
+        
+      this.setData({ 
+        currentTime, 
+        duration, 
+        progress 
+      });
+    });
+    
+    audioContext.onError((err) => {
+      console.error('音频播放错误:', err);
+      wx.showToast({
+        title: '音频播放失败',
+        icon: 'none'
+      });
+    });
+    
+    // 保存音频上下文以便后续控制
+    this.audioContext = audioContext;
+  },
+
+  // 新增方法：处理内容数据
+  processContents(contents) {
+    if (!contents || contents.length === 0) return;
+    
+    console.log('Processing contents:', contents);
+    
+    // 按类型分类内容
+    const audioList = contents.filter(content => content.type === 2).map(content => ({
+      id: content.id,
+      title: content.name,
+      cover: content.coverPath || '/images/default-cover.png',
+      type: 'audio',
+      url: content.filePath,
+      richText: content.richText,
+      playCount: content.playCount || 0
+    }));
+    
+    const videoList = contents.filter(content => content.type === 1).map(content => ({
+      id: content.id,
+      title: content.name,
+      cover: content.coverPath || '/images/default-cover.png',
+      type: 'video',
+      url: content.filePath,
+      richText: content.richText,
+      playCount: content.playCount || 0
+    }));
+    
+    console.log('Processed audio list:', audioList.length, 'items');
+    console.log('Processed video list:', videoList.length, 'items');
+
+    // 保存到全局状态
+    const app = getApp();
+    app.globalData.audioList = audioList;
+    app.globalData.currentBookId = this.data.bookId;
+    console.log('Saved audio list to global state:', audioList.length, 'items for book', this.data.bookId);
+
+    // 默认使用的内容类型
+    let defaultContentType = 'text';
+    let defaultActiveTab = 'audio';
+    
+    // 如果有音频内容，默认选中音频标签
+    if (audioList.length > 0) {
+      defaultContentType = 'list'; // 使用新的内容类型表示列表模式
+      defaultActiveTab = 'audio';
+    } 
+    // 否则，如果有视频内容，选中视频标签
+    else if (videoList.length > 0) {
+      defaultContentType = 'list'; // 使用新的内容类型表示列表模式
+      defaultActiveTab = 'video';
+    }
+
+    // 更新数据
+    this.setData({
+      audioList,
+      videoList,
+      // 保存章节信息以供后续使用
+      chapters: contents.map((content, index) => ({
+        id: content.id,
+        title: content.name,
+        url: content.filePath,
+        type: content.type,
+        content: content.richText
+      })),
+      totalChapters: contents.length,
+      activeTab: defaultActiveTab,
+      contentType: defaultContentType
+    }, () => {
+      console.log('Data updated, audio list has', this.data.audioList.length, 'items');
+      console.log('Data updated, video list has', this.data.videoList.length, 'items');
+      console.log('Current activeTab:', this.data.activeTab);
+      console.log('Current contentType:', this.data.contentType);
+    });
   },
 }); 

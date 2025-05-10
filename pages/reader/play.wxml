@@ -1,0 +1,97 @@
+<view class="play-container">
+  <!-- 音频播放器 -->
+  <view class="audio-player" wx:if="{{type === 'audio'}}">
+    <view class="vinyl-container">
+      <view class="vinyl-record {{isPlaying ? 'playing' : ''}}">
+        <image class="record-image" src="/images/audio/center-wheel.png" mode="aspectFit"></image>
+      </view>
+    </view>
+    
+    <view class="player-controls">
+      <view class="progress-bar-container">
+        <view class="time-label">{{currentTime || '00:00'}}</view>
+        <slider 
+          class="progress-slider" 
+          block-size="12" 
+          activeColor="#ff6b81" 
+          backgroundColor="#e0e0e0" 
+          value="{{progress || 0}}" 
+          bindchange="onProgressChange"
+          bindchanging="onProgressChanging"
+        />
+        <view class="time-label">{{duration || '--:--'}}</view>
+      </view>
+      
+      <view class="control-buttons">
+        <!-- 播放模式按钮 -->
+        <view class="control-btn mode-btn" bindtap="togglePlayMode">
+          <text class="mode-icon">{{playModeIcons[playMode]}}</text>
+        </view>
+        
+        <!-- 上一曲按钮 -->
+        <view class="control-btn" bindtap="playPrevious">
+          <text wx:if="{{!prevImageLoaded}}" class="control-text-icon">◀</text>
+          <image class="control-icon" src="/images/audio/prev.png" mode="aspectFit" binderror="onPrevImageError" wx:if="{{prevImageLoaded !== false}}"></image>
+        </view>
+        
+        <!-- 播放/暂停按钮 -->
+        <view class="control-btn play-btn" bindtap="togglePlay">
+          <text wx:if="{{!playPauseImageLoaded}}" class="control-text-icon play-text-icon">{{isPlaying ? '❚❚' : '▶'}}</text>
+          <image class="control-icon" src="{{isPlaying ? '/images/audio/pause.png' : '/images/audio/play.png'}}" mode="aspectFit" binderror="onPlayPauseImageError" wx:if="{{playPauseImageLoaded !== false}}"></image>
+        </view>
+        
+        <!-- 下一曲按钮 -->
+        <view class="control-btn" bindtap="playNext">
+          <text wx:if="{{!nextImageLoaded}}" class="control-text-icon">▶</text>
+          <image class="control-icon" src="/images/audio/next.png" mode="aspectFit" binderror="onNextImageError" wx:if="{{nextImageLoaded !== false}}"></image>
+        </view>
+        
+        <!-- 播放列表按钮 -->
+        <view class="control-btn list-btn" bindtap="togglePlaylist">
+          <text class="list-icon">≡</text>
+        </view>
+      </view>
+    </view>
+    
+    <!-- 播放列表弹窗 -->
+    <view class="playlist-panel {{showPlaylist ? 'show' : ''}}">
+      <view class="playlist-header">
+        <view class="playlist-title">播放列表</view>
+        <view class="playlist-close" bindtap="togglePlaylist">×</view>
+      </view>
+      <scroll-view scroll-y class="playlist-content">
+        <view class="playlist-empty" wx:if="{{!audioList || audioList.length === 0}}">
+          暂无可播放音频
+        </view>
+        <view 
+          class="playlist-item {{currentAudioIndex === index ? 'active' : ''}}" 
+          wx:for="{{audioList}}" 
+          wx:key="id" 
+          bindtap="selectTrack" 
+          data-index="{{index}}"
+        >
+          <view class="playlist-item-title">{{item.title}}</view>
+          <view class="playlist-item-duration" wx:if="{{item.duration}}">{{item.duration}}</view>
+        </view>
+      </scroll-view>
+    </view>
+  </view>
+
+  <!-- 视频播放器 -->
+  <view class="video-player" wx:elif="{{type === 'video'}}">
+    <video
+      id="player-video"
+      class="video"
+      src="{{url}}"
+      controls="{{true}}"
+      autoplay="{{true}}"
+      show-play-btn="{{true}}"
+      show-center-play-btn="{{true}}"
+      show-progress="{{true}}"
+      enable-progress-gesture="{{true}}"
+      bindplay="onVideoPlay"
+      bindpause="onVideoPause"
+      bindtimeupdate="onVideoTimeUpdate"
+    ></video>
+  </view>
+</view> 

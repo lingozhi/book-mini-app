@@ -5,6 +5,7 @@
   background: #f8f8f8;
   position: relative;
   padding: 0;
+  padding-bottom: 100rpx;
   overflow-x: hidden;
 }
 
