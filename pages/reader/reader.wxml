@@ -46,7 +46,8 @@
             <view class="item-title">{{item.title || '未知标题'}}</view>
           </view>
           <view class="item-stats">
-            <text class="play-count">{{item.playCount || 0}}</text>
+            <text class="duration">{{item.duration || "00:00"}}</text>
+            <text class="play-count" wx:if="{{item.playCount > 0}}">{{item.playCount}}</text>
           </view>
         </view>
       </scroll-view>
@@ -72,11 +73,12 @@
               bindtap="playVideo" 
               data-index="{{index}}">
           <view class="item-info">
-            <image class="item-icon" src="/images/icons/play.png"></image>
+            <image class="item-icon" src="/images/audio/play.png"></image>
             <view class="item-title">{{item.title || '未知标题'}}</view>
           </view>
           <view class="item-stats">
-            <text class="play-count">{{item.playCount || 0}}</text>
+            <text class="duration">{{item.duration || "00:00"}}</text>
+            <text class="play-count" wx:if="{{item.playCount > 0}}">{{item.playCount}}</text>
           </view>
         </view>
       </scroll-view>
@@ -182,4 +184,18 @@
   
   <!-- 添加迷你播放器组件 -->
   <mini-player></mini-player>
+  
+  <!-- 隐藏的视频元素用于获取视频时长 -->
+  <video 
+    id="duration-detector"
+    src="{{durationDetectorUrl}}"
+    style="width: 0; height: 0; position: absolute; opacity: 0;"
+    wx:if="{{durationDetectorVisible}}"
+    autoplay="{{true}}"
+    initial-time="0.1"
+    controls="{{false}}"
+    muted="{{true}}"
+    bindtimeupdate="onVideoDurationDetected"
+    binderror="onVideoDetectorError">
+  </video>
 </view> 

@@ -28,22 +28,22 @@
   margin-bottom: 60rpx;
 }
 
-.vinyl-record {
+/* 书籍封面样式 */
+.book-cover-record {
   width: 500rpx;
   height: 500rpx;
   display: flex;
   align-items: center;
   justify-content: center;
+  border-radius: 16rpx;
+  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.2);
+  overflow: hidden;
 }
 
-.vinyl-record.playing {
-  animation: rotate 3s linear infinite;
-}
-
-.record-image {
+.cover-image {
   width: 100%;
   height: 100%;
-  border-radius: 50%;
+  border-radius: 16rpx;
 }
 
 .player-controls {
@@ -95,6 +95,11 @@
   color: #666;
 }
 
+.mode-icon-image {
+  width: 48rpx;
+  height: 48rpx;
+}
+
 .play-btn {
   width: 120rpx;
   height: 120rpx;
@@ -117,6 +122,7 @@
   align-items: center;
   justify-content: center;
   background: #000;
+  margin-top: -100rpx;
 }
 
 .video {

@@ -450,6 +450,15 @@ slider {
   color: #999;
 }
 
+.duration {
+  font-size: 24rpx;
+  color: #666;
+  margin-right: 16rpx;
+  background-color: #f0f0f0;
+  padding: 4rpx 8rpx;
+  border-radius: 10rpx;
+}
+
 .empty-list {
   display: flex;
   justify-content: center;

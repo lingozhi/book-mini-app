@@ -33,7 +33,9 @@ Page({
     isPlaying: false,
     currentTime: '00:00',
     duration: '00:00',
-    collection: []
+    collection: [],
+    durationDetectorUrl: '',
+    durationDetectorVisible: false
   },
 
   onLoad(options) {
@@ -87,6 +89,7 @@ Page({
         if (res.statusCode === 200 && res.data.code === 200) {
           const bookData = res.data.data;
           console.log('Book data received:', bookData);
+          console.log('Book cover path from API:', bookData.coverPath);
           
           // 设置书籍详情
           this.setData({
@@ -96,6 +99,9 @@ Page({
             bookLanguage: bookData.language || '',
             bookType: bookData.type || ''
           });
+
+          // 打印设置后的封面
+          console.log('Book cover set in data:', this.data.bookCover);
 
           // 判断内容类型
           if (bookData.series === true) {
@@ -560,6 +566,17 @@ Page({
     if (innerAudioContext) {
       innerAudioContext.stop();
     }
+    
+    // 清理视频检测定时器
+    if (this._durationDetectorTimeout) {
+      clearTimeout(this._durationDetectorTimeout);
+      this._durationDetectorTimeout = null;
+    }
+    
+    // 隐藏视频探测器
+    this.setData({
+      durationDetectorVisible: false
+    });
   },
   
   // 处理音频时间更新事件
@@ -664,10 +681,14 @@ Page({
             type: 'audio',
             url: content.filePath,
             richText: content.richText,
-            playCount: content.playCount || 0
+            playCount: content.playCount || 0,
+            duration: content.duration || "00:00"
           }));
           
           console.log('Fetched audio list:', audioList.length, 'items');
+          
+          // 预加载音频时长
+          this.preloadAudioDurations(audioList);
           
           // 保存到全局状态
           app.globalData.audioList = audioList;
@@ -728,8 +749,12 @@ Page({
             type: 'video',
             url: item.filePath,
             richText: item.richText,
-            playCount: item.playCount || 0
+            playCount: item.playCount || 0,
+            duration: item.duration || "00:00"
           }));
+          
+          // 预加载视频时长
+          this.preloadVideoDurations(videoList);
           
           this.setData({ videoList });
         } else {
@@ -747,6 +772,185 @@ Page({
         });
       }
     });
+  },
+
+  // 新增方法：预加载音频时长
+  preloadAudioDurations(audioList) {
+    audioList.forEach((item, index) => {
+      if (!item.url) return;
+      
+      // 创建一个临时的音频上下文获取时长
+      const tempAudio = wx.createInnerAudioContext();
+      tempAudio.src = item.url;
+      
+      // 设置为静音，避免播放音频时发出声音
+      tempAudio.volume = 0;
+      // 额外保险，直接设置静音属性
+      tempAudio.obeyMuteSwitch = false;
+      tempAudio.muted = true;
+      
+      // 设置超时，防止一直等待
+      let timeoutId = setTimeout(() => {
+        if (tempAudio) {
+          tempAudio.destroy();
+        }
+      }, 5000);
+      
+      // 使用时间更新事件而不是canplay事件可以获得更准确的时长
+      tempAudio.onTimeUpdate(() => {
+        if (tempAudio && tempAudio.duration && tempAudio.duration > 0) {
+          clearTimeout(timeoutId);
+          
+          // 格式化并更新时长
+          const formattedDuration = this.formatTime(tempAudio.duration);
+          
+          // 更新列表项
+          const updatedList = [...this.data.audioList];
+          if (updatedList[index]) {
+            updatedList[index].duration = formattedDuration;
+            
+            this.setData({
+              audioList: updatedList
+            });
+          }
+          
+          // 停止播放
+          tempAudio.stop();
+          
+          // 释放资源
+          tempAudio.destroy();
+        }
+      });
+      
+      // 仍然监听canplay事件，但在这里播放一小段以触发timeUpdate
+      tempAudio.onCanplay(() => {
+        // 确保处于静音状态
+        tempAudio.volume = 0;
+        tempAudio.muted = true;
+        
+        tempAudio.seek(0);
+        tempAudio.play();
+        
+        // 只播放很短时间
+        setTimeout(() => {
+          if (tempAudio) {
+            tempAudio.pause();
+            tempAudio.stop();
+          }
+        }, 500);
+      });
+      
+      tempAudio.onError(() => {
+        // 出错时也释放资源
+        clearTimeout(timeoutId);
+        tempAudio.destroy();
+      });
+    });
+  },
+  
+  // 新增方法：预加载视频时长
+  preloadVideoDurations(videoList) {
+    if (videoList.length === 0) return;
+    
+    // 保存原始视频列表的引用，以便后续更新
+    this._videoList = videoList;
+    
+    // 一次只处理一个视频，减轻性能负担
+    this._processVideoCount = 0;
+    this._maxVideoToProcess = Math.min(videoList.length, 5); // 最多同时处理5个视频，避免过多的资源占用
+    
+    // 如果列表中有视频项目，则开始逐个检测视频时长
+    this._currentVideoIndex = 0;
+    this.loadNextVideoDuration();
+  },
+  
+  // 新增方法：加载下一个视频的时长
+  loadNextVideoDuration() {
+    if (!this._videoList || 
+        this._currentVideoIndex >= this._videoList.length || 
+        this._processVideoCount >= this._maxVideoToProcess) {
+      // 所有视频已处理完毕或达到并发上限
+      if (this._currentVideoIndex >= this._videoList.length) {
+        this.setData({
+          durationDetectorVisible: false,
+          durationDetectorUrl: ''
+        });
+      }
+      return;
+    }
+    
+    // 使当前处理中的视频数+1
+    this._processVideoCount++;
+    
+    const currentVideo = this._videoList[this._currentVideoIndex];
+    if (currentVideo && currentVideo.url) {
+      // 显示隐藏的video元素，并设置当前要检测的视频URL
+      this.setData({
+        durationDetectorUrl: currentVideo.url,
+        durationDetectorVisible: true
+      });
+      
+      // 设置超时，如果一段时间后仍无法获取，则跳到下一个
+      this._durationDetectorTimeout = setTimeout(() => {
+        this._processVideoCount--; // 减少当前处理数
+        this._currentVideoIndex++;
+        this.loadNextVideoDuration();
+      }, 3000);
+    } else {
+      // 无效的视频项，跳到下一个
+      this._processVideoCount--; // 减少当前处理数
+      this._currentVideoIndex++;
+      this.loadNextVideoDuration();
+    }
+  },
+  
+  // 新增方法：视频加载完成获取时长
+  onVideoDurationDetected(e) {
+    // 清除超时
+    if (this._durationDetectorTimeout) {
+      clearTimeout(this._durationDetectorTimeout);
+    }
+    
+    const { duration } = e.detail;
+    if (duration && duration > 0) {
+      // 格式化时长
+      const formattedDuration = this.formatTime(duration);
+      
+      // 更新当前视频的时长
+      if (this._videoList && this._videoList[this._currentVideoIndex]) {
+        // 创建新的引用，避免直接修改
+        const updatedList = [...this.data.videoList];
+        updatedList[this._currentVideoIndex].duration = formattedDuration;
+        
+        this.setData({
+          videoList: updatedList
+        });
+      }
+    }
+    
+    // 减少当前处理数
+    this._processVideoCount--;
+    
+    // 继续处理下一个视频
+    this._currentVideoIndex++;
+    this.loadNextVideoDuration();
+  },
+
+  // 新增方法：处理视频检测器错误
+  onVideoDetectorError(e) {
+    console.error('视频加载错误:', e);
+    
+    // 清除超时定时器
+    if (this._durationDetectorTimeout) {
+      clearTimeout(this._durationDetectorTimeout);
+    }
+    
+    // 减少当前处理数
+    this._processVideoCount--;
+    
+    // 继续处理下一个视频
+    this._currentVideoIndex++;
+    this.loadNextVideoDuration();
   },
 
   // 修改标签切换方法，加载对应内容
@@ -772,6 +976,12 @@ Page({
     
     if (!audio) return;
     
+    console.log('Playing audio:', audio);
+    console.log('Book cover to use:', audio.cover || this.data.bookCover);
+    
+    // 将封面信息保存到全局状态
+    app.globalData.currentBookCover = audio.cover || this.data.bookCover || '';
+    
     // 导航到音频播放页面，传递必要参数
     wx.navigateTo({
       url: `/pages/reader/play?id=${audio.id}&type=audio&title=${encodeURIComponent(audio.title)}&url=${encodeURIComponent(audio.url)}&bookId=${this.data.bookId}`
@@ -785,10 +995,46 @@ Page({
     
     if (!video) return;
     
+    // 暂停当前正在播放的音频
+    this.pauseCurrentAudio();
+    
+    // 将封面信息保存到全局状态
+    app.globalData.currentBookCover = video.cover || this.data.bookCover || '';
+    
     // 导航到视频播放页面，传递必要参数
     wx.navigateTo({
       url: `/pages/reader/play?id=${video.id}&type=video&title=${encodeURIComponent(video.title)}&url=${encodeURIComponent(video.url)}&bookId=${this.data.bookId}`
     });
+  },
+
+  // 新增方法：暂停当前播放的音频
+  pauseCurrentAudio() {
+    // 检查全局音频上下文
+    const backgroundAudioManager = wx.getBackgroundAudioManager();
+    if (backgroundAudioManager && !backgroundAudioManager.paused) {
+      console.log('暂停正在播放的背景音频');
+      backgroundAudioManager.pause();
+    }
+    
+    // 检查全局内部音频上下文
+    const innerAudioContext = app.globalData.innerAudioContext;
+    if (innerAudioContext && !innerAudioContext.paused) {
+      console.log('暂停正在播放的内部音频');
+      innerAudioContext.pause();
+    }
+    
+    // 检查音频管理器中的音频
+    if (audioManager && typeof audioManager.pauseCurrent === 'function') {
+      console.log('暂停音频管理器中的当前音频');
+      audioManager.pauseCurrent();
+    }
+    
+    // 更新界面状态
+    if (this.data.isPlaying) {
+      this.setData({
+        isPlaying: false
+      });
+    }
   },
 
   // 辅助方法：加载音频播放器
@@ -847,7 +1093,8 @@ Page({
       type: 'audio',
       url: content.filePath,
       richText: content.richText,
-      playCount: content.playCount || 0
+      playCount: content.playCount || 0,
+      duration: content.duration || "00:00"
     }));
     
     const videoList = contents.filter(content => content.type === 1).map(content => ({
@@ -857,7 +1104,8 @@ Page({
       type: 'video',
       url: content.filePath,
       richText: content.richText,
-      playCount: content.playCount || 0
+      playCount: content.playCount || 0,
+      duration: content.duration || "00:00"
     }));
     
     console.log('Processed audio list:', audioList.length, 'items');
@@ -904,6 +1152,15 @@ Page({
       console.log('Data updated, video list has', this.data.videoList.length, 'items');
       console.log('Current activeTab:', this.data.activeTab);
       console.log('Current contentType:', this.data.contentType);
+      
+      // 预加载音频和视频时长
+      if (audioList.length > 0) {
+        this.preloadAudioDurations(audioList);
+      }
+      
+      if (videoList.length > 0) {
+        this.preloadVideoDurations(videoList);
+      }
     });
   },
 }); 

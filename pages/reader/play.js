@@ -4,7 +4,7 @@ const audioManager = require('../../utils/audioManager');
 // 播放模式常量
 const PLAY_MODE = {
   SEQUENCE: 0,  // 顺序播放
-  LOOP: 1,      // 循环播放
+  LOOP: 1,      // 单曲循环
   RANDOM: 2     // 随机播放
 };
 
@@ -15,12 +15,18 @@ Page({
     title: '',
     url: '',
     bookId: '',
+    bookCover: '', // Added book cover path
     isPlaying: false,
     currentTime: '00:00',
     duration: '00:00',
     progress: 0,
     playMode: PLAY_MODE.SEQUENCE,
-    playModeIcons: ['→', '↻', '⤮'],  // 顺序, 循环, 随机
+    playModeIcons: ['→', '↻', '⤮'],  // 顺序, 单曲循环, 随机 (备用文本图标)
+    playModeImages: [
+      '/images/audio/sequence.png',  // 顺序播放
+      '/images/audio/looping.png',   // 单曲循环
+      '/images/audio/random.png'     // 随机播放
+    ],
     showPlaylist: false,
     audioList: [],
     currentAudioIndex: 0,
@@ -28,6 +34,8 @@ Page({
     prevImageLoaded: true,
     nextImageLoaded: true,
     playPauseImageLoaded: true,
+    playModeImageLoaded: true,
+    listImageLoaded: true,
     // 进度条拖动状态
     isDragging: false
   },
@@ -50,14 +58,28 @@ Page({
       return;
     }
     
+    // 从全局状态获取封面
+    const bookCover = app.globalData.currentBookCover || '';
+    console.log('Book cover from global state:', bookCover);
+    
     this.setData({
       id,
       type,
       title: decodeURIComponent(title || ''),
       url: decodeURIComponent(url || ''),
       bookId,
+      bookCover: bookCover || '/images/default-cover.png',
       isPlaying: true // 自动开始播放
     });
+
+    // 调试日志
+    console.log('Book cover set in data:', this.data.bookCover);
+
+    // 如果没有封面，尝试从API获取
+    if (!this.data.bookCover || this.data.bookCover === '/images/default-cover.png') {
+      console.log('No cover provided, fetching from API');
+      this.fetchBookCover();
+    }
 
     console.log('Decoded URL:', this.data.url);
 
@@ -104,6 +126,10 @@ Page({
       }
     } else if (type === 'video') {
       console.log('Initializing video player');
+      
+      // 在播放视频前暂停所有音频
+      this.pauseAllAudio();
+      
       // 视频播放器会在页面加载后通过组件自动初始化
       setTimeout(() => {
         this.videoContext = wx.createVideoContext('player-video');
@@ -133,11 +159,12 @@ Page({
       
       // 创建一个只包含当前音频的列表
       if (this.data.id && this.data.title && this.data.url) {
-        console.log('Creating single item audio list with current audio');
+        console.log('Creating fallback audio list with current audio');
         const singleAudioList = [{
           id: this.data.id,
           title: this.data.title,
-          url: this.data.url
+          url: this.data.url,
+          cover: this.data.bookCover || '/images/default-cover.png'
         }];
         
         this.setData({
@@ -147,7 +174,7 @@ Page({
         
         // 保存到全局状态
         app.globalData.audioList = singleAudioList;
-        app.globalData.currentBookId = this.data.bookId || 'single';
+        app.globalData.currentBookId = this.data.bookId;
         app.globalData.currentAudioIndex = 0;
       }
       
@@ -164,11 +191,12 @@ Page({
       
       // 创建一个只包含当前音频的列表
       if (this.data.id && this.data.title && this.data.url) {
-        console.log('Creating single item audio list due to no token');
+        console.log('Creating fallback audio list with current audio');
         const singleAudioList = [{
           id: this.data.id,
           title: this.data.title,
-          url: this.data.url
+          url: this.data.url,
+          cover: this.data.bookCover || '/images/default-cover.png'
         }];
         
         this.setData({
@@ -178,7 +206,7 @@ Page({
         
         // 保存到全局状态
         app.globalData.audioList = singleAudioList;
-        app.globalData.currentBookId = this.data.bookId || 'single';
+        app.globalData.currentBookId = this.data.bookId;
         app.globalData.currentAudioIndex = 0;
       }
       
@@ -239,7 +267,8 @@ Page({
               const singleAudioList = [{
                 id: this.data.id,
                 title: this.data.title,
-                url: this.data.url
+                url: this.data.url,
+                cover: this.data.bookCover || '/images/default-cover.png'
               }];
               
               this.setData({
@@ -289,7 +318,8 @@ Page({
             const singleAudioList = [{
               id: this.data.id,
               title: this.data.title,
-              url: this.data.url
+              url: this.data.url,
+              cover: this.data.bookCover || '/images/default-cover.png'
             }];
             
             this.setData({
@@ -320,7 +350,8 @@ Page({
           const singleAudioList = [{
             id: this.data.id,
             title: this.data.title,
-            url: this.data.url
+            url: this.data.url,
+            cover: this.data.bookCover || '/images/default-cover.png'
           }];
           
           this.setData({
@@ -531,7 +562,15 @@ Page({
   togglePlayMode() {
     // 循环切换播放模式
     const nextMode = (this.data.playMode + 1) % 3;
-    this.setData({ playMode: nextMode });
+    
+    console.log('Switching play mode from', this.data.playMode, 'to', nextMode);
+    console.log('New mode icon path:', this.data.playModeImages[nextMode]);
+    
+    // 确保图片模式在切换后仍然有效
+    this.setData({ 
+      playMode: nextMode,
+      playModeImageLoaded: true // 重置图片加载状态，确保会尝试加载图片
+    });
     
     const modeNames = ['顺序播放', '单曲循环', '随机播放'];
     wx.showToast({
@@ -542,7 +581,12 @@ Page({
   
   // 切换播放列表显示状态
   togglePlaylist() {
-    this.setData({ showPlaylist: !this.data.showPlaylist });
+    console.log('Toggling playlist visibility');
+    // 确保列表图标在切换时重置加载状态
+    this.setData({ 
+      showPlaylist: !this.data.showPlaylist,
+      listImageLoaded: true // 重置图片加载状态
+    });
   },
   
   // 播放上一曲
@@ -623,14 +667,14 @@ Page({
     switch (this.data.playMode) {
       case PLAY_MODE.SEQUENCE:
         // 顺序播放模式，播放下一曲
+        console.log('Sequence mode: playing next track');
         if (this.data.currentAudioIndex < this.data.audioList.length - 1) {
-          console.log('Sequence mode: playing next track');
+          // 不是最后一首，播放下一首
           this.playNext();
         } else {
-          console.log('Sequence mode: reached the end of playlist');
           // 已经是最后一首，停止播放
+          console.log('Sequence mode: reached the end of playlist, stopping');
           this.setData({ isPlaying: false });
-          // 导航栏标题不变，因为没有切换到新的曲目
         }
         break;
       case PLAY_MODE.LOOP:
@@ -705,6 +749,14 @@ Page({
       progress: 0
     });
     
+    // 设置封面图片
+    if (track.cover) {
+      console.log('Setting cover from track:', track.cover);
+      this.setData({
+        bookCover: track.cover
+      });
+    }
+    
     // 更新导航栏标题
     wx.setNavigationBarTitle({
       title: track.title || '播放'
@@ -716,13 +768,19 @@ Page({
     app.globalData.currentAudioIndex = index;
     app.globalData.isPlayingInBackground = true;
     
+    // 更新全局封面
+    if (track.cover) {
+      app.globalData.currentBookCover = track.cover;
+    }
+    
     // 确保全局currentTrack包含完整信息
     app.globalData.currentTrack = {
       id: track.id,
       title: track.title,
       url: track.url,
       isPlaying: true,
-      currentAudioIndex: index
+      currentAudioIndex: index,
+      cover: track.cover
     };
     
     // 保存完整的播放列表
@@ -894,6 +952,34 @@ Page({
     this.setData({ playPauseImageLoaded: false });
   },
 
+  onPlayModeImageError() {
+    console.log('Play mode button image failed to load');
+    this.setData({ playModeImageLoaded: false });
+  },
+
+  onListImageError() {
+    console.log('Playlist button image failed to load');
+    this.setData({ listImageLoaded: false });
+  },
+
+  onCoverImageLoad(e) {
+    console.log('Cover image loaded successfully:', this.data.bookCover);
+  },
+
+  onCoverImageError(e) {
+    console.error('Cover image failed to load:', this.data.bookCover);
+    // 记录错误并使用默认图片
+    if (this.data.bookCover !== '/images/default-cover.png') {
+      wx.showToast({
+        title: '封面加载失败',
+        icon: 'none'
+      });
+      this.setData({
+        bookCover: '/images/default-cover.png'
+      });
+    }
+  },
+
   onUnload() {
     console.log('Play page unloading');
     const app = getApp();
@@ -938,5 +1024,91 @@ Page({
       };
       console.log('Updated global audio state in onShow');
     }
+  },
+
+  // 获取书籍封面
+  fetchBookCover() {
+    const app = getApp();
+    const bookId = this.data.bookId;
+    
+    if (!bookId) {
+      console.error('Missing bookId for cover fetch');
+      return;
+    }
+    
+    const token = wx.getStorageSync('token');
+    if (!token) {
+      console.error('No token available for book info request');
+      return;
+    }
+    
+    wx.request({
+      url: `${app.globalData.baseUrl}/book/info`,
+      method: 'GET',
+      data: { id: bookId },
+      header: {
+        'Authorization': token
+      },
+      success: (res) => {
+        if (res.data.code === 0 && res.data.data) {
+          const bookData = res.data.data;
+          const coverPath = bookData.coverPath || '/images/default-cover.png';
+          
+          console.log('Fetched book cover path:', coverPath);
+          
+          // 设置封面URL，确保URL是完整的且未被编码
+          this.setData({
+            bookCover: coverPath
+          });
+          
+          console.log('Updated book cover in data:', this.data.bookCover);
+        }
+      },
+      fail: (err) => {
+        console.error('Failed to fetch book info:', err);
+      }
+    });
+  },
+
+  // 暂停所有音频播放
+  pauseAllAudio() {
+    console.log('暂停所有音频播放');
+    
+    // 检查全局背景音频管理器
+    const backgroundAudioManager = wx.getBackgroundAudioManager();
+    if (backgroundAudioManager && !backgroundAudioManager.paused) {
+      console.log('暂停背景音频管理器');
+      backgroundAudioManager.pause();
+    }
+    
+    // 检查全局内部音频上下文
+    const app = getApp();
+    const innerAudioContext = app.globalData.innerAudioContext;
+    if (innerAudioContext && !innerAudioContext.paused) {
+      console.log('暂停全局内部音频上下文');
+      innerAudioContext.pause();
+    }
+    
+    // 如果存在当前音频上下文，暂停它
+    if (app.globalData.currentAudioContext) {
+      console.log('暂停全局当前音频上下文');
+      try {
+        app.globalData.currentAudioContext.pause();
+      } catch (err) {
+        console.error('暂停全局当前音频出错:', err);
+      }
+    }
+    
+    // 使用音频管理器暂停
+    if (audioManager && typeof audioManager.pauseCurrent === 'function') {
+      console.log('使用音频管理器暂停当前音频');
+      audioManager.pauseCurrent();
+    }
+    
+    // 更新全局状态
+    if (app.globalData.currentTrack) {
+      app.globalData.currentTrack.isPlaying = false;
+    }
+    app.globalData.isPlayingInBackground = false;
   },
 }); 

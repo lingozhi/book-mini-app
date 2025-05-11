@@ -2,8 +2,14 @@
   <!-- 音频播放器 -->
   <view class="audio-player" wx:if="{{type === 'audio'}}">
     <view class="vinyl-container">
-      <view class="vinyl-record {{isPlaying ? 'playing' : ''}}">
-        <image class="record-image" src="/images/audio/center-wheel.png" mode="aspectFit"></image>
+      <view class="book-cover-record">
+        <image 
+          class="cover-image" 
+          src="{{bookCover}}" 
+          mode="aspectFill" 
+          binderror="onCoverImageError"
+          bindload="onCoverImageLoad"
+        ></image>
       </view>
     </view>
     
@@ -25,7 +31,14 @@
       <view class="control-buttons">
         <!-- 播放模式按钮 -->
         <view class="control-btn mode-btn" bindtap="togglePlayMode">
-          <text class="mode-icon">{{playModeIcons[playMode]}}</text>
+          <text wx:if="{{!playModeImageLoaded}}" class="mode-icon">{{playModeIcons[playMode]}}</text>
+          <image 
+            wx:if="{{playModeImageLoaded !== false}}" 
+            class="mode-icon-image" 
+            src="{{playModeImages[playMode]}}" 
+            mode="aspectFit"
+            binderror="onPlayModeImageError"
+          ></image>
         </view>
         
         <!-- 上一曲按钮 -->
@@ -48,7 +61,14 @@
         
         <!-- 播放列表按钮 -->
         <view class="control-btn list-btn" bindtap="togglePlaylist">
-          <text class="list-icon">≡</text>
+          <text wx:if="{{!listImageLoaded}}" class="list-icon">≡</text>
+          <image 
+            wx:if="{{listImageLoaded !== false}}" 
+            class="mode-icon-image" 
+            src="/images/audio/list.png" 
+            mode="aspectFit"
+            binderror="onListImageError"
+          ></image>
         </view>
       </view>
     </view>
