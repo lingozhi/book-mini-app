@@ -3,6 +3,66 @@
   background: #fff;
   position: relative;
   padding-bottom: 100rpx; /* 为迷你播放器留出空间 */
+  padding-top: 0; /* 重置顶部内边距 */
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 背景容器 - 统一背景 */
+.background-container {
+  position: relative;
+  background-color: #222222;
+  background-size: cover;
+  background-position: center top;
+  background-repeat: no-repeat;
+  padding-top: 0; /* 移除内边距，让内容定位控制 */
+}
+
+/* 统一磨砂玻璃效果 */
+.background-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 1;
+}
+
+/* 自定义导航栏 */
+.custom-nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 44px;
+  z-index: 9999;
+}
+
+/* 返回按钮 */
+.nav-back {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 44px;
+  width: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.back-icon {
+  width: 12px;
+  height: 12px;
+  border-top: 2px solid #fff;
+  border-left: 2px solid #fff;
+  transform: rotate(-45deg);
+  margin-left: 16px;
 }
 
 .content {
@@ -309,56 +369,74 @@ slider {
   text-align: center;
 }
 
-/* Add new styles for the book header, tabs, and content list */
+/* 书籍信息头部 - 居中展示封面和标题 */
 .book-header {
-  padding: 20rpx;
-  background-color: #f5f5f5;
-  border-bottom: 1rpx solid #e0e0e0;
+  width: 100%;
+  position: relative;
+  padding: 30rpx 32rpx;
+  padding-top: calc(44px + var(--status-bar-height, 20px) + 20rpx); /* 导航栏高度 + 状态栏高度 + 额外间距 */
+  box-sizing: border-box;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .book-info {
+  position: relative;
+  z-index: 2;
   display: flex;
   align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.book-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  width: 100%;
 }
 
 .book-cover {
-  width: 160rpx;
-  height: 200rpx;
-  border-radius: 8rpx;
-  margin-right: 20rpx;
-  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.1);
+  width: 180rpx;
+  height: 240rpx;
+  border-radius: 12rpx;
+  box-shadow: 0 8rpx 16rpx rgba(0, 0, 0, 0.3);
+  margin-bottom: 20rpx;
 }
 
 .book-details {
-  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .book-title {
-  font-size: 32rpx;
+  font-size: 34rpx;
   font-weight: bold;
-  margin-bottom: 10rpx;
-  color: #333;
+  color: #ffffff;
+  margin-bottom: 12rpx;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .book-meta {
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.7);
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
 }
 
-.book-meta text {
-  font-size: 24rpx;
-  color: #666;
-  background-color: #eeeeee;
-  padding: 4rpx 12rpx;
-  border-radius: 20rpx;
-  margin-right: 10rpx;
-  margin-bottom: 8rpx;
+.age-range, .language, .type {
+  margin: 0 10rpx;
 }
 
+/* 内容标签 */
 .content-tabs {
   display: flex;
   background-color: #fff;
   border-bottom: 1rpx solid #e0e0e0;
+  position: relative;
+  z-index: 1;
 }
 
 .tab {
@@ -388,23 +466,22 @@ slider {
   background-color: #ff6b81;
 }
 
-.list-scroll-view {
-  height: 100%;
-  width: 100%;
-  box-sizing: border-box;
-}
-
 .content-list-container {
   background: #fff;
   position: relative;
-  height: calc(100vh - 300rpx);
+  flex: 1;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 350rpx - var(--status-bar-height, 20px)); /* 设置固定高度 */
 }
 
 .content-list {
   height: 100%;
   width: 100%;
   position: relative;
+  display: flex;
+  flex-direction: column;
 }
 
 .content-list.show {
@@ -416,47 +493,47 @@ slider {
 }
 
 .content-item {
+  padding: 24rpx 32rpx;
+  border-bottom: 1rpx solid #eee;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 24rpx 32rpx;
-  border-bottom: 1rpx solid #f0f0f0;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .item-info {
+  flex: 1;
   display: flex;
   align-items: center;
-  flex: 1;
 }
 
 .item-icon {
   width: 48rpx;
   height: 48rpx;
-  margin-right: 16rpx;
+  margin-right: 20rpx;
 }
 
 .item-title {
-  font-size: 28rpx;
+  font-size: 30rpx;
   color: #333;
 }
 
 .item-stats {
   display: flex;
-  align-items: center;
-}
-
-.play-count {
-  font-size: 24rpx;
-  color: #999;
+  flex-direction: column;
+  align-items: flex-end;
 }
 
 .duration {
   font-size: 24rpx;
   color: #666;
-  margin-right: 16rpx;
-  background-color: #f0f0f0;
-  padding: 4rpx 8rpx;
-  border-radius: 10rpx;
+}
+
+.play-count {
+  font-size: 22rpx;
+  color: #999;
+  margin-top: 8rpx;
 }
 
 .empty-list {
@@ -517,3 +594,140 @@ slider {
   z-index: 999;
   display: none;
 }
+
+/* 视频列表样式 */
+.video-item {
+  padding: 16rpx 0;
+}
+
+.video-thumbnail {
+  position: relative;
+  width: 200rpx;
+  height: 120rpx;
+  margin-right: 20rpx;
+  border-radius: 8rpx;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.thumbnail-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.play-icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 48rpx;
+  height: 48rpx;
+  opacity: 0.8;
+}
+
+.video-item .item-info {
+  display: flex;
+  align-items: center;
+}
+
+.video-item .item-title {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+/* 视频列表样式 - 网格布局 */
+.video-grid {
+  display: flex;
+  flex-wrap: wrap;
+  padding: 20rpx;
+  justify-content: space-between;
+  padding-bottom: 50rpx; /* 底部添加一些padding，提升滚动体验 */
+}
+
+.video-grid-item {
+  width: calc(50% - 10rpx);
+  margin-bottom: 20rpx;
+}
+
+.video-card {
+  position: relative;
+  border-radius: 12rpx;
+  background-color: #f5f5f5;
+  overflow: hidden;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
+}
+
+.video-thumbnail {
+  width: 100%;
+  height: 220rpx; /* Slightly taller for better proportions */
+  object-fit: cover;
+}
+
+.video-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 220rpx; /* Match the thumbnail height */
+  background: linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.5));
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.video-duration {
+  position: absolute;
+  bottom: 10rpx;
+  right: 10rpx;
+  background-color: rgba(0, 0, 0, 0.6);
+  color: white;
+  font-size: 22rpx;
+  padding: 4rpx 12rpx;
+  border-radius: 4rpx;
+}
+
+.play-icon-large {
+  width: 70rpx;
+  height: 70rpx;
+  opacity: 0.9;
+  filter: drop-shadow(0 2rpx 4rpx rgba(0, 0, 0, 0.3));
+}
+
+.video-title {
+  font-size: 26rpx;
+  color: #333;
+  padding: 16rpx;
+  height: 52rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  line-height: 1.4;
+}
+
+.video-play-count {
+  position: absolute;
+  bottom: 10rpx;
+  left: 10rpx;
+  color: white;
+  font-size: 22rpx;
+  padding: 4rpx 12rpx;
+  background-color: rgba(0, 0, 0, 0.5);
+  border-radius: 4rpx;
+}
+
+/* 列表滚动视图 - 充满父容器并允许滚动 */
+.list-scroll-view {
+  flex: 1;
+  width: 100%;
+  box-sizing: border-box;
+  overflow-y: auto;
+  height: 100%; /* 确保高度为100% */
+}
+

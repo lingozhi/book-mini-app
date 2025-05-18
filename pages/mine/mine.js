@@ -151,11 +151,6 @@ Page({
                       key: 'userInfo',
                       data: userData
                     });
-                    
-                    wx.showToast({
-                      title: '登录成功',
-                      icon: 'success'
-                    });
                   } else {
                     // 登录失败
                     wx.showToast({
@@ -252,10 +247,6 @@ Page({
           this.setData({
             userInfo: {}
           });
-          wx.showToast({
-            title: '已退出登录',
-            icon: 'success'
-          });
         }
       }
     });
@@ -269,10 +260,6 @@ Page({
         if (res.confirm) {
           wx.clearStorage({
             success: () => {
-              wx.showToast({
-                title: '清除成功',
-                icon: 'success'
-              });
               // 重新加载数据
               app.loadUserData();
             }
@@ -307,14 +294,7 @@ Page({
               code: res.code
             });
             
-            // 模拟获取成功
-            wx.showToast({
-              title: '手机号获取成功',
-              icon: 'success'
-            });
-            
             // 更新用户信息，添加手机号标记
-            // 实际应用中，这里应该使用后端返回的解密后的手机号
             const updatedUserInfo = {
               ...this.data.userInfo,
               phoneNumber: '已绑定'  // 实际应用中应该是真实手机号

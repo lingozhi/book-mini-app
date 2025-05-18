@@ -1,14 +1,24 @@
-<view class="reader-container">
-  <!-- 书籍信息头部 -->
-  <view class="book-header">
-    <view class="book-info">
-      <image class="book-cover" src="{{bookCover || '/images/default-cover.png'}}"></image>
-      <view class="book-details">
-        <view class="book-title">{{bookTitle || '未知书籍'}}</view>
-        <view class="book-meta">
-          <text class="age-range">{{bookAgeRange || ''}}</text>
-          <text class="language">{{bookLanguage || ''}}</text>
-          <text class="type">{{bookType || ''}}</text>
+<view class="reader-container" style="--status-bar-height: {{statusBarHeight}}px;">
+  <!-- 整体磨砂背景容器 -->
+  <view class="background-container" style="{{headerStyle}}">
+    <!-- 自定义顶部导航栏 - 直接集成在背景容器中 -->
+    <view class="nav-back" style="margin-top: {{statusBarHeight}}px;" bindtap="goBack">
+      <view class="back-icon"></view>
+    </view>
+
+    <!-- 书籍信息头部 -->
+    <view class="book-header">
+      <view class="book-info">
+        <view class="book-center">
+          <image class="book-cover" src="{{bookCover || '/images/default-cover.png'}}"></image>
+          <view class="book-details">
+            <view class="book-title">{{bookTitle || '未知书籍'}}</view>
+            <view class="book-meta">
+              <text class="age-range" wx:if="{{bookAgeRange}}">{{bookAgeRange}}</text>
+              <text class="language" wx:if="{{bookLanguage}}">{{bookLanguage}}</text>
+              <text class="type" wx:if="{{bookType}}">{{bookType}}</text>
+            </view>
+          </view>
         </view>
       </view>
     </view>
@@ -35,12 +45,20 @@
         <text class="loading-text">加载中...</text>
       </view>
       
-      <scroll-view scroll-y class="list-scroll-view" wx:elif="{{audioList && audioList.length > 0}}">
+      <scroll-view 
+        scroll-y="true" 
+        class="list-scroll-view" 
+        wx:elif="{{audioList && audioList.length > 0}}"
+        enable-flex="true"
+        enhanced="true"
+        show-scrollbar="true"
+        bounces="true">
         <view wx:for="{{audioList}}" 
               wx:key="id" 
               class="content-item"
               bindtap="playAudio" 
-              data-index="{{index}}">
+              data-index="{{index}}"
+              bindappear="onAudioItemAppear">
           <view class="item-info">
             <image class="item-icon" src="/images/audio/play.png"></image>
             <view class="item-title">{{item.title || '未知标题'}}</view>
@@ -66,19 +84,32 @@
         <text class="loading-text">加载中...</text>
       </view>
       
-      <scroll-view scroll-y class="list-scroll-view" wx:elif="{{videoList && videoList.length > 0}}">
-        <view wx:for="{{videoList}}" 
-              wx:key="id" 
-              class="content-item"
-              bindtap="playVideo" 
-              data-index="{{index}}">
-          <view class="item-info">
-            <image class="item-icon" src="/images/audio/play.png"></image>
-            <view class="item-title">{{item.title || '未知标题'}}</view>
-          </view>
-          <view class="item-stats">
-            <text class="duration">{{item.duration || "00:00"}}</text>
-            <text class="play-count" wx:if="{{item.playCount > 0}}">{{item.playCount}}</text>
+      <scroll-view 
+        scroll-y="true" 
+        class="list-scroll-view" 
+        wx:elif="{{videoList && videoList.length > 0}}"
+        enable-flex="true"
+        enhanced="true"
+        show-scrollbar="true"
+        bounces="true">
+        <view class="video-grid">
+          <view wx:for="{{videoList}}" 
+                wx:key="id" 
+                class="video-grid-item"
+                bindtap="playVideo" 
+                data-index="{{index}}"
+                bindappear="onVideoItemAppear">
+            <view class="video-card">
+              <image class="video-thumbnail" src="{{item.thumbnail || item.cover}}" mode="aspectFill"></image>
+              <view class="video-overlay">
+                <image class="play-icon-large" src="/images/audio/play.png"></image>
+                <view class="video-duration">{{item.duration || "00:00"}}</view>
+                <view class="video-play-count" wx:if="{{item.playCount && item.playCount > 0}}">
+                  <text>播放 {{item.playCount}}</text>
+                </view>
+              </view>
+              <view class="video-title">{{item.title || '未知标题'}}</view>
+            </view>
           </view>
         </view>
       </scroll-view>
@@ -198,4 +229,23 @@
     bindtimeupdate="onVideoDurationDetected"
     binderror="onVideoDetectorError">
   </video>
+  
+  <!-- 隐藏的视频元素用于获取缩略图 -->
+  <video 
+    id="thumbnail-video"
+    src="{{thumbnailVideoUrl}}"
+    style="width: 0; height: 0; position: absolute; opacity: 0;"
+    wx:if="{{thumbnailVideoVisible}}"
+    autoplay="{{true}}"
+    initial-time="0.1"
+    controls="{{false}}"
+    muted="{{true}}"
+    show-progress="{{false}}"
+    show-fullscreen-btn="{{false}}"
+    bindloadedmetadata="onThumbnailVideoLoaded"
+    binderror="onThumbnailVideoError">
+  </video>
+  
+  <!-- 隐藏的canvas用于绘制视频帧 -->
+  <canvas type="2d" id="thumbnail-canvas" style="width: 200px; height: 120px; position: absolute; left: -9999px;"></canvas>
 </view> 

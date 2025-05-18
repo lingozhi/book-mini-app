@@ -66,10 +66,6 @@ Page({
     }, true, token)
       .then(res => {
         wx.hideLoading();
-        wx.showToast({
-          title: '导入成功',
-          icon: 'success'
-        });
         
         // 返回书架页面
         wx.switchTab({
@@ -82,10 +78,7 @@ Page({
         
         // 处理书籍已存在的情况
         if (err && err.errorCode === "400" && err.message && err.message.includes("该书籍已存在")) {
-          wx.showToast({
-            title: '书籍已在书架中',
-            icon: 'success'
-          });
+          // 删除书籍已存在的成功提示
           
           // 仍然返回书架页面，因为操作本质上是成功的
           setTimeout(() => {

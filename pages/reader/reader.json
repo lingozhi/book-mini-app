@@ -1,11 +1,9 @@
 {
-  "navigationBarTitleText": "阅读",
-  "navigationBarTextStyle": "white",
-  "navigationBarBackgroundColor": "#222222",
   "usingComponents": {
     "text-reader": "../../components/text-reader/text-reader",
     "audio-reader": "../../components/audio-reader/audio-reader",
     "video-reader": "../../components/video-reader/video-reader",
     "book-collection": "../../components/book-collection/book-collection"
-  }
+  },
+  "navigationStyle": "custom"
 } 

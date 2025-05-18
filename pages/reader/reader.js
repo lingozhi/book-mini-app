@@ -35,7 +35,12 @@ Page({
     duration: '00:00',
     collection: [],
     durationDetectorUrl: '',
-    durationDetectorVisible: false
+    durationDetectorVisible: false,
+    thumbnailVideoUrl: '',
+    thumbnailVideoIndex: undefined,
+    thumbnailVideoVisible: false,
+    headerStyle: '',
+    statusBarHeight: 0
   },
 
   onLoad(options) {
@@ -43,6 +48,16 @@ Page({
     this.setData({
       bookId: id,
       currentChapter: parseInt(chapter) || 1
+    });
+
+    // 自定义导航栏样式，让内容延伸到导航栏下方
+    wx.getSystemInfo({
+      success: (res) => {
+        const statusBarHeight = res.statusBarHeight;
+        this.setData({
+          statusBarHeight: statusBarHeight
+        });
+      }
     });
 
     // 获取图书信息
@@ -91,13 +106,16 @@ Page({
           console.log('Book data received:', bookData);
           console.log('Book cover path from API:', bookData.coverPath);
           
+          const coverUrl = bookData.coverPath || '/images/default-cover.png';
+          
           // 设置书籍详情
           this.setData({
             bookTitle: bookData.name,
-            bookCover: bookData.coverPath || '/images/default-cover.png',
+            bookCover: coverUrl,
             bookAgeRange: bookData.ageRange || '',
             bookLanguage: bookData.language || '',
-            bookType: bookData.type || ''
+            bookType: bookData.type || '',
+            headerStyle: `background-image: url('${coverUrl}')`
           });
 
           // 打印设置后的封面
@@ -122,8 +140,11 @@ Page({
             // 处理图书内容
             this.processContents(bookData.contents);
           } else {
-            // 如果没有直接返回内容，则请求单独的内容API
-            this.fetchAudioList();
+            // 如果没有内容，显示提示信息
+            wx.showToast({
+              title: '该书暂无内容',
+              icon: 'none'
+            });
           }
         } else {
           console.error('API返回错误:', res.data);
@@ -550,7 +571,15 @@ Page({
   },
 
   goBack() {
-    wx.navigateBack();
+    wx.navigateBack({
+      delta: 1,
+      fail: function() {
+        // If navigateBack fails, navigate to the homepage
+        wx.switchTab({
+          url: '/pages/bookshelf/bookshelf'
+        });
+      }
+    });
   },
 
   onUnload() {
@@ -614,22 +643,12 @@ Page({
 
   // 直接控制音频播放/暂停
   directAudioControl() {
-    console.log('执行直接音频控制');
-    
     // 获取音频组件
     const audioReader = this.selectComponent('#audio-reader');
-    if (!audioReader) {
-      console.error('无法获取音频组件');
-      wx.showToast({
-        title: '无法控制音频',
-        icon: 'none'
-      });
-      return;
-    }
+    if (!audioReader) return;
     
     // 切换播放状态
     const newState = !this.data.isPlaying;
-    console.log('尝试直接将音频状态切换为:', newState ? '播放' : '暂停');
     
     if (newState) {
       // 播放
@@ -643,160 +662,254 @@ Page({
     console.log('已发送音频控制命令:', newState ? '播放' : '暂停');
   },
 
-  // 新增方法：获取音频列表
-  fetchAudioList() {
-    wx.showLoading({
-      title: '加载中...',
+  // 新增方法：从缓存获取视频缩略图
+  getVideoThumbnailFromCache(videoUrl) {
+    if (!videoUrl) return '';
+    
+    const cachedThumbnails = wx.getStorageSync('video_thumbnails') || {};
+    return cachedThumbnails[videoUrl] || '';
+  },
+  
+  // 新增方法：预加载视频缩略图
+  preloadVideoThumbnails(videoList) {
+    if (!videoList || videoList.length === 0) return;
+    
+    // 从本地缓存中获取已缓存的缩略图
+    const cachedThumbnails = wx.getStorageSync('video_thumbnails') || {};
+    
+    // 更新有缓存的视频缩略图
+    let updatedList = [...videoList];
+    let needsUpdate = false;
+    
+    updatedList.forEach((item, index) => {
+      if (cachedThumbnails[item.url] && !item.thumbnail) {
+        updatedList[index].thumbnail = cachedThumbnails[item.url];
+        needsUpdate = true;
+      }
     });
+    
+    // 如果有更新，刷新列表
+    if (needsUpdate) {
+      this.setData({
+        videoList: updatedList
+      });
+    }
+  },
 
-    const token = wx.getStorageSync('token');
-    if (!token) {
-      wx.hideLoading();
-      wx.showToast({
-        title: '请先登录',
-        icon: 'none'
+  // 新增方法：加载单个视频缩略图
+  loadVideoThumbnail(index) {
+    const videoList = this.data.videoList;
+    if (!videoList || !videoList[index]) return;
+    
+    const video = videoList[index];
+    
+    // 如果已有缩略图，不需要重新获取
+    if (video.thumbnail) return;
+    
+    // 从缓存中获取
+    const cachedThumbnails = wx.getStorageSync('video_thumbnails') || {};
+    if (cachedThumbnails[video.url]) {
+      const updatedList = [...this.data.videoList];
+      updatedList[index].thumbnail = cachedThumbnails[video.url];
+      
+      this.setData({
+        videoList: updatedList
       });
       return;
     }
-
-    wx.request({
-      url: `${app.globalData.baseUrl}/book/content/list`,
-      method: 'GET',
-      data: {
-        bookId: this.data.bookId,
-        type: 'audio'
-      },
-      header: {
-        'content-type': 'application/json',
-        'token': token
-      },
-      success: (res) => {
-        wx.hideLoading();
-        
-        if (res.statusCode === 200 && res.data.code === 200) {
-          const audioList = res.data.data.map(content => ({
-            id: content.id,
-            title: content.name,
-            cover: content.coverPath || '/images/default-cover.png',
-            type: 'audio',
-            url: content.filePath,
-            richText: content.richText,
-            playCount: content.playCount || 0,
-            duration: content.duration || "00:00"
-          }));
-          
-          console.log('Fetched audio list:', audioList.length, 'items');
-          
-          // 预加载音频时长
-          this.preloadAudioDurations(audioList);
-          
-          // 保存到全局状态
-          app.globalData.audioList = audioList;
-          app.globalData.currentBookId = this.data.bookId;
-          console.log('Saved audio list to global state:', audioList.length, 'items for book', this.data.bookId);
-          
-          // 更新本地数据状态
-          this.setData({
-            audioList,
-            activeTab: 'audio',
-            contentType: audioList.length > 0 ? 'list' : 'text'
-          });
-        } else {
-          console.error('Failed to fetch audio list:', res);
-          wx.showToast({
-            title: '获取音频列表失败',
-            icon: 'none'
-          });
-        }
-      },
-      fail: (err) => {
-        wx.hideLoading();
-        console.error('Network error when fetching audio list:', err);
-        wx.showToast({
-          title: '网络错误',
-          icon: 'none'
-        });
-      }
-    });
-  },
-
-  // 新增方法：获取视频列表
-  fetchVideoList() {
-    const token = wx.getStorageSync('token');
-    if (!token) return;
-
-    this.setData({ videoLoading: true });
     
-    wx.request({
-      url: `${app.globalData.baseUrl}/book/content/list`,
-      method: 'GET',
-      data: {
-        bookId: this.data.bookId,
-        type: 'video'  // 指定获取视频类型内容
-      },
-      header: {
-        'content-type': 'application/json',
-        'token': token
-      },
-      success: (res) => {
-        this.setData({ videoLoading: false });
-        
-        if (res.statusCode === 200 && res.data.code === 200) {
-          const videoList = res.data.data.map(item => ({
-            id: item.id,
-            title: item.name,
-            cover: item.coverPath || '/images/default-cover.png',
-            type: 'video',
-            url: item.filePath,
-            richText: item.richText,
-            playCount: item.playCount || 0,
-            duration: item.duration || "00:00"
-          }));
+    // 设置一个临时视频元素
+    this.setData({
+      thumbnailVideoUrl: video.url,
+      thumbnailVideoIndex: index,
+      thumbnailVideoVisible: true
+    });
+  },
+  
+  // 新增方法：视频缩略图加载完成
+  onThumbnailVideoLoaded(e) {
+    const index = this.data.thumbnailVideoIndex;
+    if (index === undefined) return;
+    
+    const videoList = this.data.videoList;
+    if (!videoList || !videoList[index]) return;
+    
+    const video = videoList[index];
+    
+    // 获取视频实例
+    const videoContext = wx.createVideoContext('thumbnail-video', this);
+    videoContext.pause(); // 暂停视频
+    videoContext.seek(0.1); // 跳转到0.1秒，避免黑屏
+    
+    // 延迟一下捕获帧，确保视频已经渲染
+    setTimeout(() => {
+      // 获取canvas实例
+      wx.createSelectorQuery()
+        .select('#thumbnail-canvas')
+        .fields({ node: true, size: true })
+        .exec((res) => {
+          if (!res || !res[0] || !res[0].node) {
+            console.error('Failed to get canvas node');
+            this.setData({
+              thumbnailVideoVisible: false,
+              thumbnailVideoUrl: '',
+              thumbnailVideoIndex: undefined
+            });
+            return;
+          }
           
-          // 预加载视频时长
-          this.preloadVideoDurations(videoList);
+          const canvas = res[0].node;
+          const ctx = canvas.getContext('2d');
           
-          this.setData({ videoList });
-        } else {
-          wx.showToast({
-            title: res.data.message || '获取视频列表失败',
-            icon: 'none'
-          });
-        }
-      },
-      fail: (err) => {
-        this.setData({ videoLoading: false });
-        wx.showToast({
-          title: '网络错误',
-          icon: 'none'
+          // 设置canvas尺寸
+          canvas.width = 200;
+          canvas.height = 120;
+          
+          // 获取视频元素节点
+          wx.createSelectorQuery()
+            .select('#thumbnail-video')
+            .fields({ node: true, size: true, dataset: true })
+            .exec((result) => {
+              if (!result || !result[0] || !result[0].node) {
+                console.error('Failed to get video node');
+                this.setData({
+                  thumbnailVideoVisible: false,
+                  thumbnailVideoUrl: '',
+                  thumbnailVideoIndex: undefined
+                });
+                return;
+              }
+              
+              const videoNode = result[0].node;
+              
+              try {
+                // 绘制视频帧到canvas
+                ctx.drawImage(videoNode, 0, 0, canvas.width, canvas.height);
+                
+                // 将canvas转为图片临时文件
+                wx.canvasToTempFilePath({
+                  canvas: canvas,
+                  success: (res) => {
+                    const thumbnailUrl = res.tempFilePath;
+                    
+                    // 更新列表中的缩略图
+                    const updatedList = [...this.data.videoList];
+                    updatedList[index].thumbnail = thumbnailUrl;
+                    
+                    this.setData({
+                      videoList: updatedList
+                    });
+                    
+                    // 保存到缓存
+                    const cachedThumbnails = wx.getStorageSync('video_thumbnails') || {};
+                    cachedThumbnails[video.url] = thumbnailUrl;
+                    wx.setStorage({
+                      key: 'video_thumbnails',
+                      data: cachedThumbnails
+                    });
+                  },
+                  fail: (err) => {
+                    console.error('Canvas to temp file failed:', err);
+                  },
+                  complete: () => {
+                    // 隐藏临时视频
+                    this.setData({
+                      thumbnailVideoVisible: false,
+                      thumbnailVideoUrl: '',
+                      thumbnailVideoIndex: undefined
+                    });
+                  }
+                });
+              } catch (error) {
+                console.error('Failed to create thumbnail:', error);
+                this.setData({
+                  thumbnailVideoVisible: false,
+                  thumbnailVideoUrl: '',
+                  thumbnailVideoIndex: undefined
+                });
+              }
+            });
         });
-      }
+    }, 500);
+  },
+  
+  // 处理缩略图视频加载错误
+  onThumbnailVideoError(e) {
+    console.error('视频缩略图加载错误:', e);
+    
+    this.setData({
+      thumbnailVideoVisible: false,
+      thumbnailVideoUrl: '',
+      thumbnailVideoIndex: undefined
     });
   },
 
-  // 新增方法：预加载音频时长
+  // 修改音频时长获取方法
   preloadAudioDurations(audioList) {
-    audioList.forEach((item, index) => {
-      if (!item.url) return;
+    if (!audioList || audioList.length === 0) return;
+    
+    // 从本地缓存中获取已缓存的时长信息
+    const cachedDurations = wx.getStorageSync('audio_durations') || {};
+    
+    // 仅处理没有时长信息的音频
+    const itemsToLoad = audioList.filter((item, index) => {
+      // 如果已有时长，则不需要加载
+      if (item.duration && item.duration !== "00:00") return false;
       
-      // 创建一个临时的音频上下文获取时长
+      // 如果缓存中有该音频的时长信息，则使用缓存
+      if (cachedDurations[item.url]) {
+        // 更新列表项的时长信息
+        const updatedList = [...this.data.audioList];
+        updatedList[index].duration = cachedDurations[item.url];
+        
+        this.setData({
+          audioList: updatedList
+        });
+        return false;
+      }
+      
+      return true;
+    });
+    
+    // 如果所有项目都有时长信息，直接返回
+    if (itemsToLoad.length === 0) return;
+    
+    // 限制同时加载的数量为3个
+    const maxConcurrent = 3;
+    let currentLoading = 0;
+    
+    // 按需加载时长
+    const loadDuration = (item, index) => {
+      if (currentLoading >= maxConcurrent) return;
+      
+      currentLoading++;
+      
+      // 创建临时音频上下文
       const tempAudio = wx.createInnerAudioContext();
       tempAudio.src = item.url;
       
-      // 设置为静音，避免播放音频时发出声音
+      // 先设置音量为0，避免在回调中再次设置
       tempAudio.volume = 0;
-      // 额外保险，直接设置静音属性
       tempAudio.obeyMuteSwitch = false;
       tempAudio.muted = true;
       
-      // 设置超时，防止一直等待
+      // 设置超时
       let timeoutId = setTimeout(() => {
         if (tempAudio) {
           tempAudio.destroy();
+          currentLoading--;
+          
+          // 失败后继续加载队列中的下一个
+          const nextItem = itemsToLoad.shift();
+          if (nextItem) {
+            const nextIndex = audioList.findIndex(i => i.url === nextItem.url);
+            if (nextIndex !== -1) {
+              loadDuration(nextItem, nextIndex);
+            }
+          }
         }
       }, 5000);
       
-      // 使用时间更新事件而不是canplay事件可以获得更准确的时长
       tempAudio.onTimeUpdate(() => {
         if (tempAudio && tempAudio.duration && tempAudio.duration > 0) {
           clearTimeout(timeoutId);
@@ -812,99 +925,142 @@ Page({
             this.setData({
               audioList: updatedList
             });
+            
+            // 更新缓存
+            cachedDurations[item.url] = formattedDuration;
+            wx.setStorage({
+              key: 'audio_durations',
+              data: cachedDurations
+            });
           }
           
-          // 停止播放
+          // 停止播放并释放资源
           tempAudio.stop();
-          
-          // 释放资源
           tempAudio.destroy();
+          
+          currentLoading--;
+          
+          // 加载队列中的下一个
+          const nextItem = itemsToLoad.shift();
+          if (nextItem) {
+            const nextIndex = audioList.findIndex(i => i.url === nextItem.url);
+            if (nextIndex !== -1) {
+              loadDuration(nextItem, nextIndex);
+            }
+          }
         }
       });
       
-      // 仍然监听canplay事件，但在这里播放一小段以触发timeUpdate
+      // 简化onCanplay回调，避免递归调用
       tempAudio.onCanplay(() => {
-        // 确保处于静音状态
-        tempAudio.volume = 0;
-        tempAudio.muted = true;
-        
-        tempAudio.seek(0);
+        // 直接播放，不再设置音量和seek位置
         tempAudio.play();
         
-        // 只播放很短时间
         setTimeout(() => {
           if (tempAudio) {
             tempAudio.pause();
-            tempAudio.stop();
           }
-        }, 500);
+        }, 300);
       });
       
       tempAudio.onError(() => {
-        // 出错时也释放资源
         clearTimeout(timeoutId);
         tempAudio.destroy();
+        currentLoading--;
+        
+        // 失败后继续加载队列中的下一个
+        const nextItem = itemsToLoad.shift();
+        if (nextItem) {
+          const nextIndex = audioList.findIndex(i => i.url === nextItem.url);
+          if (nextIndex !== -1) {
+            loadDuration(nextItem, nextIndex);
+          }
+        }
       });
+    };
+    
+    // 开始加载前几个
+    const initialItems = itemsToLoad.splice(0, maxConcurrent);
+    initialItems.forEach(item => {
+      const index = audioList.findIndex(i => i.url === item.url);
+      if (index !== -1) {
+        loadDuration(item, index);
+      }
     });
   },
   
-  // 新增方法：预加载视频时长
+  // 修改视频时长获取方法
   preloadVideoDurations(videoList) {
-    if (videoList.length === 0) return;
+    if (!videoList || videoList.length === 0) return;
     
-    // 保存原始视频列表的引用，以便后续更新
-    this._videoList = videoList;
+    // 从本地缓存中获取已缓存的时长信息
+    const cachedDurations = wx.getStorageSync('video_durations') || {};
     
-    // 一次只处理一个视频，减轻性能负担
-    this._processVideoCount = 0;
-    this._maxVideoToProcess = Math.min(videoList.length, 5); // 最多同时处理5个视频，避免过多的资源占用
+    // 更新有缓存的视频时长信息
+    let updatedList = [...videoList];
+    let needsUpdate = false;
     
-    // 如果列表中有视频项目，则开始逐个检测视频时长
-    this._currentVideoIndex = 0;
-    this.loadNextVideoDuration();
-  },
-  
-  // 新增方法：加载下一个视频的时长
-  loadNextVideoDuration() {
-    if (!this._videoList || 
-        this._currentVideoIndex >= this._videoList.length || 
-        this._processVideoCount >= this._maxVideoToProcess) {
-      // 所有视频已处理完毕或达到并发上限
-      if (this._currentVideoIndex >= this._videoList.length) {
-        this.setData({
-          durationDetectorVisible: false,
-          durationDetectorUrl: ''
-        });
+    updatedList.forEach((item, index) => {
+      if (cachedDurations[item.url] && (!item.duration || item.duration === "00:00")) {
+        updatedList[index].duration = cachedDurations[item.url];
+        needsUpdate = true;
       }
+    });
+    
+    // 如果有更新，刷新列表
+    if (needsUpdate) {
+      this.setData({
+        videoList: updatedList
+      });
+    }
+    
+    // 视频时长仅在用户播放时或显示在屏幕上时获取
+    // 先不做预加载，避免性能问题
+  },
+
+  // 新方法：按需获取单个视频时长
+  loadSingleVideoDuration(index) {
+    const videoList = this.data.videoList;
+    if (!videoList || !videoList[index]) return;
+    
+    const video = videoList[index];
+    
+    // 如果已有时长，不需要重新获取
+    if (video.duration && video.duration !== "00:00") return;
+    
+    // 从缓存中获取
+    const cachedDurations = wx.getStorageSync('video_durations') || {};
+    if (cachedDurations[video.url]) {
+      const updatedList = [...this.data.videoList];
+      updatedList[index].duration = cachedDurations[video.url];
+      
+      this.setData({
+        videoList: updatedList
+      });
       return;
     }
     
-    // 使当前处理中的视频数+1
-    this._processVideoCount++;
+    // 创建临时video元素获取时长
+    this.setData({
+      durationDetectorUrl: video.url,
+      durationDetectorVisible: true,
+      _currentLoadingVideoIndex: index  // 保存当前加载的索引
+    });
     
-    const currentVideo = this._videoList[this._currentVideoIndex];
-    if (currentVideo && currentVideo.url) {
-      // 显示隐藏的video元素，并设置当前要检测的视频URL
-      this.setData({
-        durationDetectorUrl: currentVideo.url,
-        durationDetectorVisible: true
-      });
-      
-      // 设置超时，如果一段时间后仍无法获取，则跳到下一个
-      this._durationDetectorTimeout = setTimeout(() => {
-        this._processVideoCount--; // 减少当前处理数
-        this._currentVideoIndex++;
-        this.loadNextVideoDuration();
-      }, 3000);
-    } else {
-      // 无效的视频项，跳到下一个
-      this._processVideoCount--; // 减少当前处理数
-      this._currentVideoIndex++;
-      this.loadNextVideoDuration();
+    // 设置超时
+    if (this._durationDetectorTimeout) {
+      clearTimeout(this._durationDetectorTimeout);
     }
+    
+    this._durationDetectorTimeout = setTimeout(() => {
+      this.setData({
+        durationDetectorVisible: false,
+        durationDetectorUrl: ''
+      });
+    }, 3000);
   },
-  
-  // 新增方法：视频加载完成获取时长
+
+  // 修改视频加载完成获取时长的回调
   onVideoDurationDetected(e) {
     // 清除超时
     if (this._durationDetectorTimeout) {
@@ -912,31 +1068,52 @@ Page({
     }
     
     const { duration } = e.detail;
-    if (duration && duration > 0) {
+    if (duration && duration > 0 && this._currentLoadingVideoIndex !== undefined) {
       // 格式化时长
       const formattedDuration = this.formatTime(duration);
       
       // 更新当前视频的时长
-      if (this._videoList && this._videoList[this._currentVideoIndex]) {
-        // 创建新的引用，避免直接修改
-        const updatedList = [...this.data.videoList];
-        updatedList[this._currentVideoIndex].duration = formattedDuration;
+      const updatedList = [...this.data.videoList];
+      const index = this._currentLoadingVideoIndex;
+      
+      if (updatedList[index]) {
+        updatedList[index].duration = formattedDuration;
         
         this.setData({
           videoList: updatedList
         });
+        
+        // 保存到缓存
+        const video = updatedList[index];
+        if (video && video.url) {
+          const cachedDurations = wx.getStorageSync('video_durations') || {};
+          cachedDurations[video.url] = formattedDuration;
+          wx.setStorage({
+            key: 'video_durations',
+            data: cachedDurations
+          });
+        }
       }
     }
     
-    // 减少当前处理数
-    this._processVideoCount--;
-    
-    // 继续处理下一个视频
-    this._currentVideoIndex++;
-    this.loadNextVideoDuration();
+    // 隐藏探测器
+    this.setData({
+      durationDetectorVisible: false,
+      durationDetectorUrl: '',
+      _currentLoadingVideoIndex: undefined
+    });
   },
 
-  // 新增方法：处理视频检测器错误
+  // 视频项目出现在视图中时触发
+  onVideoItemAppear(e) {
+    const { index } = e.currentTarget.dataset;
+    if (typeof index !== 'undefined') {
+      this.loadSingleVideoDuration(index);
+      this.loadVideoThumbnail(index);
+    }
+  },
+
+  // 处理视频检测器错误
   onVideoDetectorError(e) {
     console.error('视频加载错误:', e);
     
@@ -945,27 +1122,141 @@ Page({
       clearTimeout(this._durationDetectorTimeout);
     }
     
-    // 减少当前处理数
-    this._processVideoCount--;
+    // 隐藏探测器
+    this.setData({
+      durationDetectorVisible: false,
+      durationDetectorUrl: '',
+      _currentLoadingVideoIndex: undefined
+    });
+  },
+
+  // 新方法：获取单个音频时长
+  loadSingleAudioDuration(index) {
+    const audioList = this.data.audioList;
+    if (!audioList || !audioList[index]) return;
     
-    // 继续处理下一个视频
-    this._currentVideoIndex++;
-    this.loadNextVideoDuration();
+    const audio = audioList[index];
+    
+    // 如果已有时长，不需要重新获取
+    if (audio.duration && audio.duration !== "00:00") return;
+    
+    // 从缓存中获取
+    const cachedDurations = wx.getStorageSync('audio_durations') || {};
+    if (cachedDurations[audio.url]) {
+      const updatedList = [...this.data.audioList];
+      updatedList[index].duration = cachedDurations[audio.url];
+      
+      this.setData({
+        audioList: updatedList
+      });
+      return;
+    }
+    
+    // 创建临时音频上下文
+    const tempAudio = wx.createInnerAudioContext();
+    tempAudio.src = audio.url;
+    
+    // 先设置静音属性，避免在onCanplay中再次设置触发递归
+    tempAudio.volume = 0;
+    tempAudio.obeyMuteSwitch = false;
+    tempAudio.muted = true;
+    
+    // 设置超时
+    let timeoutId = setTimeout(() => {
+      if (tempAudio) {
+        tempAudio.destroy();
+      }
+    }, 5000);
+    
+    tempAudio.onTimeUpdate(() => {
+      if (tempAudio && tempAudio.duration && tempAudio.duration > 0) {
+        clearTimeout(timeoutId);
+        
+        // 格式化并更新时长
+        const formattedDuration = this.formatTime(tempAudio.duration);
+        
+        // 更新列表项
+        const updatedList = [...this.data.audioList];
+        if (updatedList[index]) {
+          updatedList[index].duration = formattedDuration;
+          
+          this.setData({
+            audioList: updatedList
+          });
+          
+          // 更新缓存
+          cachedDurations[audio.url] = formattedDuration;
+          wx.setStorage({
+            key: 'audio_durations',
+            data: cachedDurations
+          });
+        }
+        
+        // 停止播放
+        tempAudio.stop();
+        
+        // 释放资源
+        tempAudio.destroy();
+      }
+    });
+    
+    // 简化onCanplay回调，避免递归调用
+    tempAudio.onCanplay(() => {
+      // 不再重复设置音量，避免递归
+      // 不使用seek(0)，而是直接播放，避免触发递归
+      tempAudio.play();
+      
+      // 短暂播放后停止
+      setTimeout(() => {
+        if (tempAudio) {
+          tempAudio.pause();
+        }
+      }, 300);
+    });
+    
+    tempAudio.onError(() => {
+      clearTimeout(timeoutId);
+      tempAudio.destroy();
+    });
+  },
+  
+  // 新增方法：音频项目出现在视图中时触发
+  onAudioItemAppear(e) {
+    const { index } = e.currentTarget.dataset;
+    if (typeof index !== 'undefined') {
+      this.loadSingleAudioDuration(index);
+    }
   },
 
   // 修改标签切换方法，加载对应内容
   switchTab(e) {
-    const tab = e.currentTarget.dataset.tab;
-    this.setData({ 
-      activeTab: tab,
-      contentType: 'list'  // 确保切换标签时内容类型为列表模式
+    const tab = e.currentTarget.dataset.tab || e.target.dataset.tab;
+    console.log('Switching to tab:', tab);
+    
+    if (tab === this.data.activeTab) return;
+    
+    this.setData({ activeTab: tab }, () => {
+      // 切换后，强制重新渲染列表，解决可能的滚动问题
+      wx.nextTick(() => {
+        if (tab === 'audio' && this.data.audioList.length > 0) {
+          // 触发音频列表的更新
+          console.log('Refreshing audio list after tab switch');
+        } else if (tab === 'video' && this.data.videoList.length > 0) {
+          // 触发视频列表的更新
+          console.log('Refreshing video list after tab switch');
+        }
+      });
     });
     
-    // 根据标签类型获取对应内容
-    if (tab === 'audio' && this.data.audioList.length === 0) {
-      this.fetchAudioList();
-    } else if (tab === 'video' && this.data.videoList.length === 0) {
-      this.fetchVideoList();
+    // 如果有列表但没有加载时长，则加载时长
+    if (tab === 'audio' && this.data.audioList.length > 0 && 
+        this.data.audioList.every(item => !item.durationLoaded)) {
+      this.preloadAudioDurations(this.data.audioList);
+    }
+    else if (tab === 'video' && this.data.videoList.length > 0 && 
+             this.data.videoList.every(item => !item.durationLoaded)) {
+      this.preloadVideoDurations(this.data.videoList);
+      this.preloadVideoThumbnails(this.data.videoList);
     }
   },
 

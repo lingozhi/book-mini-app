@@ -145,6 +145,10 @@ Page({
 
   // 获取音频列表
   fetchAudioList() {
+    wx.showLoading({
+      title: '加载中...',
+    });
+
     const app = getApp();
     const token = wx.getStorageSync('token');
     console.log('Fetching audio list for bookId:', this.data.bookId);
@@ -214,160 +218,132 @@ Page({
       return;
     }
 
-    wx.showLoading({
-      title: '加载中...',
-    });
-    
-    const requestUrl = `${app.globalData.baseUrl}/book/content/list`;
-    console.log('Audio list request URL:', requestUrl);
-    console.log('Request data:', { bookId: this.data.bookId, type: 'audio' });
+    const requestUrl = `${app.globalData.baseUrl}/book/get/${this.data.bookId}`;
+    console.log('Book info request URL:', requestUrl);
     
     wx.request({
       url: requestUrl,
       method: 'GET',
-      data: {
-        bookId: this.data.bookId,
-        type: 'audio'
-      },
       header: {
         'content-type': 'application/json',
         'token': token
       },
       success: (res) => {
         wx.hideLoading();
-        console.log('Audio list response:', res);
+        console.log('Book info response:', res);
         
-        if (res.statusCode === 200 && res.data.code === 200 && res.data.data && Array.isArray(res.data.data)) {
-          // 确保数据格式一致
-          const audioList = res.data.data.map(item => {
-            // 确保所有必要字段都存在
-            return {
-              id: item.id || '',
-              title: item.name || '未命名音频',
-              url: item.filePath || '',
-              cover: item.coverPath || '/images/default-cover.png',
-              type: 'audio',
-              richText: item.richText || '',
-              playCount: item.playCount || 0
-            };
-          }).filter(item => item.url); // 只保留有URL的项
+        if (res.statusCode === 200 && res.data.code === 200 && res.data.data) {
+          const bookData = res.data.data;
           
-          console.log('Processed audio list:', audioList);
+          // 检查是否存在contents数组并包含音频内容
+          if (bookData.contents && Array.isArray(bookData.contents)) {
+            // 过滤出所有类型为音频的内容
+            const audioList = bookData.contents
+              .filter(content => content.type === 2) // 音频类型为2
+              .map(content => {
+                return {
+                  id: content.id || '',
+                  title: content.name || '未命名音频',
+                  url: content.filePath || '',
+                  cover: content.coverPath || (bookData.coverPath || '/images/default-cover.png'),
+                  type: 'audio',
+                  richText: content.richText || '',
+                  playCount: content.playCount || 0
+                };
+              }).filter(item => item.url); // 只保留有URL的项
           
-          if (audioList.length === 0) {
-            console.warn('Audio list is empty');
-            wx.showToast({
-              title: '没有可播放的音频',
-              icon: 'none'
-            });
+            console.log('Processed audio list:', audioList.length, 'items');
             
-            // 创建一个只包含当前音频的列表
-            if (this.data.id && this.data.title && this.data.url) {
-              console.log('Creating fallback audio list with current audio');
-              const singleAudioList = [{
-                id: this.data.id,
-                title: this.data.title,
-                url: this.data.url,
-                cover: this.data.bookCover || '/images/default-cover.png'
-              }];
-              
-              this.setData({
-                audioList: singleAudioList,
-                currentAudioIndex: 0
+            if (audioList.length === 0) {
+              console.warn('Audio list is empty');
+              wx.showToast({
+                title: '没有可播放的音频',
+                icon: 'none'
               });
               
-              // 保存到全局状态
-              app.globalData.audioList = singleAudioList;
-              app.globalData.currentBookId = this.data.bookId;
-              app.globalData.currentAudioIndex = 0;
+              // 创建一个只包含当前音频的列表
+              this.createFallbackAudioList();
+              
+              this.initAudioPlayer();
+              return;
             }
             
-            this.initAudioPlayer();
-            return;
+            // 保存到全局状态
+            app.globalData.audioList = audioList;
+            app.globalData.currentBookId = this.data.bookId;
+            console.log('Saved audio list to global state:', audioList.length, 'items');
+            
+            // 找到当前播放的音频在列表中的索引
+            const currentIndex = audioList.findIndex(item => String(item.id) === String(this.data.id));
+            console.log('Current audio index:', currentIndex, 'for id:', this.data.id);
+            
+            this.setData({
+              audioList: audioList,
+              currentAudioIndex: currentIndex >= 0 ? currentIndex : 0
+            });
+            
+            // 保存当前播放索引到全局状态
+            app.globalData.currentAudioIndex = this.data.currentAudioIndex;
+          } else {
+            console.warn('No contents array found in book data or no audio contents found');
+            // 创建一个只包含当前音频的列表
+            this.createFallbackAudioList();
           }
-          
-          // 保存到全局状态
-          app.globalData.audioList = audioList;
-          app.globalData.currentBookId = this.data.bookId;
-          console.log('Saved audio list to global state:', audioList.length, 'items');
-          
-          // 找到当前播放的音频在列表中的索引
-          const currentIndex = audioList.findIndex(item => String(item.id) === String(this.data.id));
-          console.log('Current audio index:', currentIndex, 'for id:', this.data.id);
-          
-          this.setData({
-            audioList: audioList,
-            currentAudioIndex: currentIndex >= 0 ? currentIndex : 0
-          });
-          
-          // 保存当前播放索引到全局状态
-          app.globalData.currentAudioIndex = this.data.currentAudioIndex;
           
           // 初始化音频播放器
           this.initAudioPlayer();
         } else {
-          console.error('Failed to fetch audio list:', res);
+          console.error('Failed to fetch book info:', res);
           wx.showToast({
             title: (res.data && res.data.message) || '获取音频列表失败',
             icon: 'none'
           });
           
           // 创建一个只包含当前音频的列表
-          if (this.data.id && this.data.title && this.data.url) {
-            console.log('Creating fallback audio list with current audio');
-            const singleAudioList = [{
-              id: this.data.id,
-              title: this.data.title,
-              url: this.data.url,
-              cover: this.data.bookCover || '/images/default-cover.png'
-            }];
-            
-            this.setData({
-              audioList: singleAudioList,
-              currentAudioIndex: 0
-            });
-            
-            // 保存到全局状态
-            app.globalData.audioList = singleAudioList;
-            app.globalData.currentBookId = this.data.bookId;
-            app.globalData.currentAudioIndex = 0;
-          }
+          this.createFallbackAudioList();
           
           this.initAudioPlayer();
         }
       },
       fail: (err) => {
         wx.hideLoading();
-        console.error('Network error when fetching audio list:', err);
+        console.error('Network error when fetching book info:', err);
         wx.showToast({
           title: '网络错误',
           icon: 'none'
         });
         
         // 创建一个只包含当前音频的列表
-        if (this.data.id && this.data.title && this.data.url) {
-          console.log('Creating fallback audio list with current audio after network error');
-          const singleAudioList = [{
-            id: this.data.id,
-            title: this.data.title,
-            url: this.data.url,
-            cover: this.data.bookCover || '/images/default-cover.png'
-          }];
-          
-          this.setData({
-            audioList: singleAudioList,
-            currentAudioIndex: 0
-          });
-          
-          // 保存到全局状态
-          app.globalData.audioList = singleAudioList;
-          app.globalData.currentBookId = this.data.bookId || 'single';
-          app.globalData.currentAudioIndex = 0;
-        }
+        this.createFallbackAudioList();
         
         this.initAudioPlayer();
       }
     });
+  },
+
+  // 新增辅助方法：创建一个只包含当前音频的列表
+  createFallbackAudioList() {
+    const app = getApp();
+    
+    if (this.data.id && this.data.title && this.data.url) {
+      console.log('Creating fallback audio list with current audio');
+      const singleAudioList = [{
+        id: this.data.id,
+        title: this.data.title,
+        url: this.data.url,
+        cover: this.data.bookCover || '/images/default-cover.png'
+      }];
+      
+      this.setData({
+        audioList: singleAudioList,
+        currentAudioIndex: 0
+      });
+      
+      // 保存到全局状态
+      app.globalData.audioList = singleAudioList;
+      app.globalData.currentBookId = this.data.bookId || 'single';
+      app.globalData.currentAudioIndex = 0;
+    }
   },
 
   initAudioPlayer() {
